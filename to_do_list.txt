@@ -1,0 +1,53 @@
+PHASE 1 — Base Project Skeleton (not done)
+
+    create the directory structure + empty Python modules to have a clean foundation.
+
+PHASE 2 — UGV Kinematic Model
+
+    Implement:
+
+    State representation
+
+    Update step
+
+    Steering + speed constraints
+
+PHASE 3 — Formation Manager (not done)
+
+    Handles formation shape selection + time-varying δᵢ(t).
+
+PHASE 4 — Controllers (not done)
+
+    Implement:
+
+    Pure Pursuit tracking
+
+    Leader–follower formation
+
+    Formation → robot targets mapping
+
+PHASE 5 — Motion Planners (not done)
+
+    Implement:
+
+    A*
+
+    RRT
+
+    Potential field
+
+PHASE 6 — GUI (not done)
+
+    Build PyQt5 system with:
+
+    canvas (matplotlib)
+
+    obstacle editor
+
+    formation selector
+
+    planner selector
+
+    simulation loop
+ 
+PHASE 7 — Simulation Loop (not done)
