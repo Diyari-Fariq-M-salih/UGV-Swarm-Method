@@ -108,3 +108,19 @@ class FormationController:
             targets.append((tx, ty))
 
         return targets
+
+"""
+Smooth automatic transitions
+
+Using a time-based tanh
+
+Rotation based on leader heading
+
+Formation shape rotates with the leader’s orientation.
+
+Each UGV gets a unique (x, y) target.
+
+Future-proof
+
+qw can easily add new formation
+"""
