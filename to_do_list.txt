@@ -2,7 +2,7 @@ PHASE 1 — Base Project Skeleton (done)
 
     create the directory structure + empty Python modules to have a clean foundation.
 
-PHASE 2 — UGV Kinematic Model
+PHASE 2 — UGV Kinematic Model (done)
 
     Implement:
 
