@@ -4,12 +4,12 @@ from core.controllers.formation_controller import FormationController
 # ---------------------------
 # Initialize formation controller
 # ---------------------------
-fc = FormationController(formation_type="triangle", d=1.5)
+fc = FormationController(formation_type="diamond", d=1.5)
 
 # Leader pose (x, y, theta)
 leader_pose = (0.0, 0.0, 0.0)
 
-print("Initial Triangle Formation:")
+print("Initial diamond Formation:")
 targets = fc.assign_targets(leader_pose)
 for i, t in enumerate(targets):
     print(f"Robot {i+1}: {t}")
@@ -17,7 +17,7 @@ for i, t in enumerate(targets):
 # ---------------------------
 # Trigger transition → arrow
 # ---------------------------
-print("\nTransitioning to ARROW formation...")
+print("\nTransitioning to arrow formation...")
 fc.set_formation("arrow")
 
 # Print frames for 3 seconds at 20 Hz
