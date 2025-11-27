@@ -25,7 +25,7 @@ xs, ys = [], []
 
 # 3. Run the simulation for ~5 seconds
 dt = 0.02  # 50 Hz
-steps = int(5 / dt)
+steps = int(10 / dt)
 
 print("Starting Pure Pursuit + PID validation...")
 
