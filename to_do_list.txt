@@ -1,4 +1,4 @@
-PHASE 1 — Base Project Skeleton (not done)
+PHASE 1 — Base Project Skeleton (done)
 
     create the directory structure + empty Python modules to have a clean foundation.
 
