@@ -61,14 +61,26 @@ class PurePursuitController:
 
     # Find target lookahead point on the path
     def find_lookahead_point(self, robot, path):
-        x, y, _ = robot.pose()
+        rx, ry, _ = robot.pose()
 
-        for px, py in path:
-            dist = math.hypot(px - x, py - y)
-            if dist >= self.lookahead:
+        # Step 1: find closest point index
+        closest_idx = 0
+        closest_dist = float('inf')
+
+        for i, (px, py) in enumerate(path):
+            d = math.hypot(px - rx, py - ry)
+            if d < closest_dist:
+                closest_dist = d
+                closest_idx = i
+
+        # Step 2: lookahead search
+        for j in range(closest_idx, len(path)):
+            px, py = path[j]
+            if math.hypot(px - rx, py - ry) >= self.lookahead:
                 return (px, py)
 
-        return path[-1]  # final waypoint
+        # Step 3: default to final waypoint
+        return path[-1]
 
     # Compute steering + speed
     def compute_control(self, robot, path):

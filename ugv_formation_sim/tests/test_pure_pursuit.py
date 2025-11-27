@@ -8,13 +8,15 @@ from core.controllers.trajectory_tracking import PurePursuitController
 path = []
 
 # Straight section
-for x in range(10):
-    path.append((x * 0.5, 0))
+for x in range(12):
+    path.append((x * 0.4, 0))
 
-# Gentle curve (quarter circle)
-for angle in range(20):
+# Curve upward
+for angle in range(25):
     theta = math.radians(angle * 4)
-    path.append((5 + 2 * math.cos(theta), 2 * math.sin(theta)))
+    x = 4 + 2 * math.cos(theta)
+    y = 2 * math.sin(theta)      # lifts curve into positive y
+    path.append((x, y))
 
 # 2. Initialize robot and controller
 robot = UGV(x=0, y=0, theta=0)
