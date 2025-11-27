@@ -2,7 +2,7 @@
 
 ## 1. Project Architecture (Python-Only Simulation Environment)
 
-- No ROS, no Gazebo — lightweight standalone Python system.
+- No ROS, no Gazebo, deadline too close — lightweight standalone Python system.
 - Modular structure for clarity and expansion:
 
 ```
@@ -26,9 +26,9 @@ ugv_formation_sim/
 │   ├── path_planner_widget.py
 │   ├── formation_widget.py
 │
-├── assets/
+├── assets/ to be determined
 │
-├── logs/
+├── logs/ for report making
 │
 └── main.py
 ```
@@ -47,17 +47,17 @@ ugv_formation_sim/
 
 We simulate 3 UGVs with the standard nonholonomic model:
 
-\[
-\dot{x} = v \cos\theta
-\]
+$$
+\dot x = v \cos \theta
+$$
 
-\[
-\dot{y} = v \sin\theta
-\]
+$$
+\dot y = v \sin \theta
+$$
 
-\[
-\dot{\theta} = \frac{v}{L} \tan(\delta)
-\]
+$$
+\dot \theta = \frac{v}{L} \tan(\delta)
+$$
 
 Where:
 
@@ -78,9 +78,9 @@ Where:
 
 Formations are defined via **relative offsets** from a leader robot:
 
-[
+$$
 p_i^{des}(t) = p_{leader}(t) + R(\theta) , \delta_i(t)
-]
+$$
 
 Where:
 
@@ -123,17 +123,17 @@ Because UGVs are nonholonomic, we use a **hierarchical control structure**:
 
 Computes desired goal pose for each robot:
 
-[
+$$
 p_i^{des} = p_{leader} + R(\theta)\delta_i(t)
-]
+$$
 
 ### **(B) Trajectory Tracking Layer — Pure Pursuit**
 
 Selected steering controller:
 
-[
+$$
 \delta = \arctan\left(\frac{2L \sin(\alpha)}{d_{lookahead}}\right)
-]
+$$
 
 Where:
 
@@ -171,11 +171,11 @@ Three planners will be implemented:
 - Not globally optimal but intuitive
 - Shows repulsive + attractive forces
 
-The GUI will allow selecting among these planners.
+The GUI will allow selecting.
 
 ---
 
-## 6. GUI Design — PyQt5 + Matplotlib Canvas
+## 6. GUI Design using PyQt5 + Matplotlib Canvas
 
 ### **Main Features**
 
@@ -195,15 +195,15 @@ The GUI will allow selecting among these planners.
 - Status output and logs
 - Planner runtime, path length, tracking error
 
----
+--
 
 ## 7. Time‑Varying Formation Support
 
-We support smooth shape transitions:
+Support smooth shape transitions:
 
-[
+$$
 \delta_i(t) = \delta_i^0 + \delta_i^1 \tanh(a(t - t_0))
-]
+$$
 
 Used for:
 
@@ -239,4 +239,4 @@ We will later produce:
 - Discussion / Limitations
 - Conclusion
 
-These notes serve as the foundation for the report and the coding phase.
+These notes serve as the foundation for the report and the coding phase. so please pay attention :3
