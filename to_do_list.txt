@@ -12,7 +12,7 @@ PHASE 2 — UGV Kinematic Model (done)
 
     Steering + speed constraints
 
-PHASE 3 — Formation Manager (not done)
+PHASE 3 — Formation Manager (done)
 
     Handles formation shape selection + time-varying δᵢ(t).
 

@@ -20,7 +20,7 @@ class UGV:
 
         # Physical limits
         self.max_speed = 2.0          # m/s
-        self.max_steering = math.radians(35)  # 35° steering limit
+        self.max_steering = math.radians(20)  # 35° steering limit
         self.acc_limit = 1.0          # m/s² acceleration limit
 
         self.L = wheelbase
