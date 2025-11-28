@@ -17,9 +17,9 @@
 
 ### 🟧 Phase 3 — Controller & Kinematics
 
-- [ ] Convert PF vector → steering & velocity
-- [ ] Implement bicycle model from MATLAB reference
-- [ ] Add heading stabilization
+- [X] Convert PF vector → steering & velocity
+- [X] Implement bicycle model
+- [X] Add heading stabilization
 
 ### 🟪 Phase 4 — GUI System
 
