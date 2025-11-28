@@ -130,7 +130,6 @@ class MainWindow(QWidget):
         self.canvas.draw_goal(g1, "blue", marker="x")
         self.canvas.draw_goal(g2, "red",  marker="o")
 
-        for obs in dyn_list:
-            self.canvas.draw_dynamic_obstacle(obs)
+        self.canvas.draw_dynamic_obstacles(dyn_list)
 
         self.canvas.refresh()
