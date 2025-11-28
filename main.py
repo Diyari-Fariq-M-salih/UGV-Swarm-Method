@@ -23,7 +23,7 @@ def main():
         goal1=np.array([27.5, 27.5]),
         goal2=np.array([27.5, 2.5]),
         dt=0.1,
-        safety_distance=2.0
+        safety_distance=3.0
     )
 
     window = MainWindow(env, sim)

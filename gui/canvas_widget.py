@@ -18,7 +18,7 @@ class CanvasWidget(QWidget):
     def draw_environment(self, env):
         self.ax.clear()
         self.ax.imshow(
-            env.grid,
+            env.get_final_grid(),
             cmap="Greys",
             origin="lower",
             extent=[0, env.width, 0, env.height],

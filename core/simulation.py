@@ -1,12 +1,6 @@
 import numpy as np
 
 class DynamicObstacle:
-    """
-    Simple moving obstacle.
-    pos = world position
-    vel = (vx, vy)
-    size = square size in meters
-    """
     def __init__(self, x, y, vx, vy, size=1.0):
         self.pos = np.array([x, y], dtype=float)
         self.vel = np.array([vx, vy], dtype=float)
@@ -18,7 +12,9 @@ class DynamicObstacle:
 
 class MultiUAVSimulation:
     """
-    2-UAV PF-based simulator with moving dynamic obstacles.
+    2-UAV PF simulator with static + dynamic obstacles.
+    Static = drawn by user, never cleared unless user presses Clear.
+    Dynamic = updated each step and stored in dynamic_grid only.
     """
 
     def __init__(self, env, planner, controller,
@@ -42,14 +38,15 @@ class MultiUAVSimulation:
 
         self.dynamic_obstacles = []
 
-    # Dynamic Obstacle API
     def add_horizontal_obstacle(self, y, speed=1.0):
-        self.dynamic_obstacles.append(DynamicObstacle(
-            x=2.0, y=y, vx=speed, vy=0.0, size=0.5))
+        self.dynamic_obstacles.append(
+            DynamicObstacle(x=2.0, y=y, vx=speed, vy=0.0, size=0.5)
+        )
 
     def add_vertical_obstacle(self, x, speed=1.0):
-        self.dynamic_obstacles.append(DynamicObstacle(
-            x=x, y=2.0, vx=0.0, vy=speed, size=0.5))
+        self.dynamic_obstacles.append(
+            DynamicObstacle(x=x, y=2.0, vx=0.0, vy=speed, size=0.5)
+        )
 
     def start(self):
         self.running = True
@@ -60,12 +57,13 @@ class MultiUAVSimulation:
         self.running = False
 
     def reset(self):
+        """Reset ONLY UAVs and dynamic obstacles. Keep static ones."""
         self.uav1_state[:] = [2.5, 2.5, np.pi/4, 0.0, 0.0]
         self.uav2_state[:] = [2.5, 27.5, -np.pi/4, 0.0, 0.0]
         self.goal1_reached = False
         self.goal2_reached = False
-        # clear dynamic obstacles from map
         self.dynamic_obstacles = []
+        self.env.clear_dynamic()    # KEEP STATIC
 
     def check_goals(self):
         if not self.goal1_reached:
@@ -83,24 +81,31 @@ class MultiUAVSimulation:
         if not self.running:
             return
 
-        # Update dynamic obstacles
-        self.env.clear()
+
+        # 1. Clear ONLY dynamic layer
+
+        self.env.clear_dynamic()     # THIS NO LONGER DELETES STATIC
+
+
+        # 2. Move dynamic obstacles and repaint dynamic layer
 
         for obs in self.dynamic_obstacles:
             obs.step(self.dt)
 
-            # bounce on borders
+            # bounce
             if obs.pos[0] <= 1 or obs.pos[0] >= self.env.width - 1:
                 obs.vel[0] *= -1
             if obs.pos[1] <= 1 or obs.pos[1] >= self.env.height - 1:
                 obs.vel[1] *= -1
 
-            self.env.paint_square(obs.pos[0], obs.pos[1], obs.size * 2)
+            # Paint to dynamic layer (NOT STATIC)
+            self.env.paint_dynamic_square(obs.pos[0], obs.pos[1], obs.size * 2)
 
-        # Collision between UAVs
+
+        # 3. UAV logic
+
         uav2_can_move = not self.check_uav_collision()
 
-        # UAV1 control
         if not self.goal1_reached:
             force1, _ = self.planner.compute_force(
                 self.uav1_state[:2], self.goal1, self.env,
@@ -108,7 +113,6 @@ class MultiUAVSimulation:
             )
             self.uav1_state = self.controller.step(self.uav1_state, force1)
 
-        # UAV2 control
         if not self.goal2_reached and uav2_can_move:
             force2, _ = self.planner.compute_force(
                 self.uav2_state[:2], self.goal2, self.env,
