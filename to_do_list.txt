@@ -9,11 +9,11 @@
 
 ### 🟩 Phase 2 — Potential Field Planner
 
-- [ ] Attractive potential toward goal
-- [ ] Repulsive potential from obstacles
-- [ ] Repulsive potential between UAVs
-- [ ] Clamp force magnitude and gradients
-- [ ] Integrate planner into `simulation.py`
+- [X] Attractive potential toward goal
+- [X] Repulsive potential from obstacles
+- [X] Repulsive potential between UAVs
+- [X] Clamp force magnitude and gradients
+- [X] Integrate planner into `simulation.py`
 
 ### 🟧 Phase 3 — Controller & Kinematics
 
