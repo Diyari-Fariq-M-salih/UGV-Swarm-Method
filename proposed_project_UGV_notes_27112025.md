@@ -1,242 +1,55 @@
-# UGV Time-Varying Formation Control Simulation — Project Notes
+# Multi-UAV Potential Field Navigation — Project Proposal & TODO
 
-## 1. Project Architecture (Python-Only Simulation Environment)
+## 📌 Project Overview
 
-- No ROS, no Gazebo, deadline too close — lightweight standalone Python system.
-- Modular structure for clarity and expansion:
+This project proposal number 2 aims to recreate and expand the multi-UAV or UGV mission simulator into a full Python application using **PySide6**, **Matplotlib**, and **Potential Field (PF) navigation** instead of RRT/RRT\*.  
+The simulator will feature:
 
-```
-ugv_formation_sim/
-│
-├── core/
-│   ├── ugv_model.py
-│   ├── controllers/
-│   │       ├── formation_controller.py
-│   │       ├── trajectory_tracking.py
-│   ├── planners/
-│   │       ├── astar.py
-│   │       ├── rrt.py
-│   │       ├── potential_field.py
-│   ├── formation_shapes.py
-│   ├── simulator.py
-│
-├── gui/
-│   ├── window.py
-│   ├── obstacle_editor.py
-│   ├── path_planner_widget.py
-│   ├── formation_widget.py
-│
-├── assets/ to be determined
-│
-├── logs/ for report making
-│
-└── main.py
-```
-
-**Key goals:**
-
-- 2D visualization
-- obstacle editing
-- selectable motion planners
-- formation management
-- real-time simulation
+- Real-time GUI control
+- Obstacle drawing
+- Two UAVs with bicycle kinematics
+- Attractive–repulsive potential field planner
+- Collision avoidance
+- Modular and scalable architecture
 
 ---
 
-## 2. UGV Dynamics — Realistic Ackermann/Unicycle Model
+## 🎯 Goals
 
-We simulate 3 UGVs with the standard nonholonomic model:
-
-$$
-\dot x = v \cos \theta
-$$
-
-$$
-\dot y = v \sin \theta
-$$
-
-$$
-\dot \theta = \frac{v}{L} \tan(\delta)
-$$
-
-Where:
-
-- **v** = linear velocity (control input)
-- **δ** = steering angle (control input)
-- **θ** = orientation
-- **L** = wheelbase (~0.5m)
-
-**Reasons for using this model:**
-
-- Matches real UGV constraints
-- Compatible with Pure Pursuit tracking
-- Easy to simulate in real-time
+- Build a clean, maintainable Python project structure.
+- Implement a robust PF-based motion controller.
+- Provide real-time visualization similar to MATLAB’s GUI.
+- Enable future extensions (missions, swarm behaviors, ROS2 integration).
 
 ---
 
-## 3. Formation Representation
+## 🧩 System Components
 
-Formations are defined via **relative offsets** from a leader robot:
+1. **GUI Layer (PySide6)**
 
-$$
-p_i^{des}(t) = p_{leader}(t) + R(\theta) , \delta_i(t)
-$$
+   - Buttons: _Start, Stop, Clear, Add Obstacle_
+   - Dynamic obstacle placement
+   - Planner selection
+   - Embedded Matplotlib canvas
 
-Where:
+2. **Simulation Core**
 
-- **R(θ)** is rotation matrix
-- **δᵢ(t)** defines formation shape
+   - Manages UAV states, time stepping, and collision detection
+   - Invokes PF planner
+   - Sends commands to controller
 
-### Example Formations (3 robots)
+3. **Potential Field Planner**
 
-#### **Triangle**
+   - Attractive field: goal direction
+   - Repulsive field: obstacles + UAVs
+   - Gradient descent / force-based motion
 
-```
-R1: ( 0,  0)
-R2: (-d, -d)
-R3: ( d, -d)
-```
+4. **Bicycle Model Controller**
 
-#### **Diamond** (3‑robot adaptation)
+   - Converts force vector into steering + velocity commands
+   - Handles dynamics constraints
 
-```
-R1: ( 0,  0)
-R2: (-d, -d)
-R3: ( d, -d)
-```
-
-#### **Arrow**
-
-```
-R1: ( 0,  0)
-R2: (-d, -d)
-R3: ( d, -d)
-```
-
----
-
-## 4. Controller Architecture
-
-Because UGVs are nonholonomic, we use a **hierarchical control structure**:
-
-### **(A) Formation Control Layer**
-
-Computes desired goal pose for each robot:
-
-$$
-p_i^{des} = p_{leader} + R(\theta)\delta_i(t)
-$$
-
-### **(B) Trajectory Tracking Layer — Pure Pursuit**
-
-Selected steering controller:
-
-$$
-\delta = \arctan\left(\frac{2L \sin(\alpha)}{d_{lookahead}}\right)
-$$
-
-Where:
-
-- **α** = heading error to target point
-- **dₗₒₒₖₐₕₑₐd** = lookahead distance
-- **L** = wheelbase
-
-**Why Pure Pursuit?**
-
-- Works well with Ackermann vehicles
-- Robust and simple
-- Good for formation tracking
-
----
-
-## 5. Motion Planners
-
-Three planners will be implemented:
-
-### **A\***
-
-- Grid‑based
-- Deterministic, optimal
-- Good for structured maps
-
-### **RRT / RRT\***
-
-- Sampling‑based
-- Handles complex environments
-- Produces smooth paths (RRT\*)
-
-### **Potential Field Method**
-
-- Good for visualization
-- Not globally optimal but intuitive
-- Shows repulsive + attractive forces
-
-The GUI will allow selecting.
-
----
-
-## 6. GUI Design using PyQt5 + Matplotlib Canvas
-
-### **Main Features**
-
-- 2D top‑down simulation canvas
-- Live animation of the robots and path
-
-### **Left Control Panel**
-
-- Add/delete obstacles (circle or rectangle)
-- Set start and goal points
-- Select planner: A\*, RRT, Potential Field
-- Select formation: triangle / diamond / arrow
-- Start, pause, reset simulation
-
-### **Bottom Panel**
-
-- Status output and logs
-- Planner runtime, path length, tracking error
-
---
-
-## 7. Time‑Varying Formation Support
-
-Support smooth shape transitions:
-
-$$
-\delta_i(t) = \delta_i^0 + \delta_i^1 \tanh(a(t - t_0))
-$$
-
-Used for:
-
-- Switching triangle → arrow
-- Obstacle‑driven formation changes
-- Manual GUI‑triggered changes
-
-Inspired by formation transition functions used in the referenced paper.
-
----
-
-## 8. Report Support
-
-The system will automatically generate logs for:
-
-- robot trajectories
-- control inputs
-- formation errors
-- planner performance
-
-We will later produce:
-
-### Report Sections
-
-- Introduction / Motivation
-- Literature Review
-- UGV Kinematic Model
-- Formation Definitions
-- Controller Derivations
-- Planner Algorithms
-- System Architecture
-- Simulation Results
-- Discussion / Limitations
-- Conclusion
-
-These notes serve as the foundation for the report and the coding phase. so please pay attention :3
+5. **Environment Map**
+   - Binary occupancy grid
+   - Set/get occupancy
+   - Inflation for safety margin

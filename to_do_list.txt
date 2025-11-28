@@ -1,53 +1,43 @@
-PHASE 1 — Base Project Skeleton (not done)
 
-    create the directory structure + empty Python modules to have a clean foundation.
+## 📋 TODO List
 
-PHASE 2 — UGV Kinematic Model
+### 🟦 Phase 1 — Foundation
 
-    Implement:
+- [ ] Implement full `environment.py`
+- [ ] Implement occupancy grid inflate & coordinate transforms
+- [ ] Define UAV state structure in `simulation.py`
 
-    State representation
+### 🟩 Phase 2 — Potential Field Planner
 
-    Update step
+- [ ] Attractive potential toward goal
+- [ ] Repulsive potential from obstacles
+- [ ] Repulsive potential between UAVs
+- [ ] Clamp force magnitude and gradients
+- [ ] Integrate planner into `simulation.py`
 
-    Steering + speed constraints
+### 🟧 Phase 3 — Controller & Kinematics
 
-PHASE 3 — Formation Manager (not done)
+- [ ] Convert PF vector → steering & velocity
+- [ ] Implement bicycle model from MATLAB reference
+- [ ] Add heading stabilization
 
-    Handles formation shape selection + time-varying δᵢ(t).
+### 🟪 Phase 4 — GUI System
 
-PHASE 4 — Controllers (not done)
+- [ ] Build PySide6 main window
+- [ ] Integrate Matplotlib canvas
+- [ ] Implement buttons and their callbacks
+- [ ] Click-to-paint obstacles
+- [ ] Add planner selection (PF only for now)
 
-    Implement:
+### 🟥 Phase 5 — Visualization
 
-    Pure Pursuit tracking
+- [ ] Draw map, obstacles, UAVs, paths
+- [ ] Smooth real-time updates
+- [ ] Goal & field vector visualization (optional)
 
-    Leader–follower formation
+### 🟫 Phase 6 — Testing & Polishing
 
-    Formation → robot targets mapping
-
-PHASE 5 — Motion Planners (not done)
-
-    Implement:
-
-    A*
-
-    RRT
-
-    Potential field
-
-PHASE 6 — GUI (not done)
-
-    Build PyQt5 system with:
-
-    canvas (matplotlib)
-
-    obstacle editor
-
-    formation selector
-
-    planner selector
-
-    simulation loop
- 
-PHASE 7 — Simulation Loop (not done)
+- [ ] Test PF convergence on simple maps
+- [ ] Validate obstacle avoidance
+- [ ] Multi-UAV interaction testing
+- [ ] Add logging & diagnostics
