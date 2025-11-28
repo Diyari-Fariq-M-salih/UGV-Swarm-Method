@@ -98,7 +98,7 @@ class MainWindow(QWidget):
         self.sim.add_horizontal_obstacle(y=15, speed=1.5)
 
     def add_vertical(self):
-        self.sim.add_vertical_obstacle(x=10, speed=1.5)
+        self.sim.add_vertical_obstacle(x=15, speed=1.5)
 
     def on_click(self, event):
         if not self.add_mode:

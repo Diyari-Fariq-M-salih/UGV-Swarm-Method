@@ -7,9 +7,9 @@ class PotentialFieldPlanner:
 
     def __init__(self,
                  k_att=1.2,
-                 k_rep=2.5,
-                 k_rep_uav=1.0,
-                 obstacle_influence=3.0,
+                 k_rep=5.0,
+                 k_rep_uav=3.0,
+                 obstacle_influence=5.0,
                  uav_influence=3.0,
                  force_limit=4.0):
 

@@ -8,8 +8,8 @@ class UAVController:
 
     def __init__(self,
                  wheelbase=0.5,
-                 dt=0.1,               # physics step (10 Hz)
-                 max_vel=2.0,
+                 dt=0.01,               # physics step (10 Hz)
+                 max_vel=5.0,
                  max_accel=1.0,
                  max_steer=np.pi/6,
                  max_steer_rate=np.pi/4):

@@ -18,7 +18,7 @@ class MultiUAVSimulation:
     """
 
     def __init__(self, env, planner, controller,
-                 goal1, goal2, dt=0.1, safety_distance=2.0):
+                 goal1, goal2, dt=0.1, safety_distance=5.0):
 
         self.env = env
         self.planner = planner
