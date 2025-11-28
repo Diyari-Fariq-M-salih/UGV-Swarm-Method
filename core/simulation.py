@@ -1,47 +1,56 @@
 import numpy as np
 
+class DynamicObstacle:
+    """
+    Simple moving obstacle.
+    pos = world position
+    vel = (vx, vy)
+    size = square size in meters
+    """
+    def __init__(self, x, y, vx, vy, size=1.0):
+        self.pos = np.array([x, y], dtype=float)
+        self.vel = np.array([vx, vy], dtype=float)
+        self.size = size
+
+    def step(self, dt):
+        self.pos += self.vel * dt
+
 
 class MultiUAVSimulation:
     """
-    Core simulation loop for 2 UAVs using:
-    - Potential Field planner
-    - Bicycle model controller
-    - Occupancy grid environment
+    2-UAV PF-based simulator with moving dynamic obstacles.
     """
 
     def __init__(self, env, planner, controller,
-                 goal1, goal2,
-                 dt=0.1,
-                 safety_distance=1.0):
-        """
-        env: OccupancyGrid
-        planner: PotentialFieldPlanner
-        controller: UAVController (shared or per-UAV)
-        goal1, goal2: numpy arrays (x,y)
-        """
+                 goal1, goal2, dt=0.1, safety_distance=2.0):
 
         self.env = env
         self.planner = planner
-        self.controller = controller  # same controller object for both UAVs
+        self.controller = controller
         self.dt = dt
-
-        # Goals
-        self.goal1 = np.array(goal1, dtype=float)
-        self.goal2 = np.array(goal2, dtype=float)
-
-        # Collision avoidance radius between UAVs
         self.safety_distance = safety_distance
 
-        # UAV states: x, y, theta, v, phi
-        self.uav1_state = np.array([2.5, 2.5, np.pi / 4, 0.0, 0.0], dtype=float)
-        self.uav2_state = np.array([2.5, 27.5, -np.pi / 4, 0.0, 0.0], dtype=float)
+        self.goal1 = np.array(goal1)
+        self.goal2 = np.array(goal2)
 
-        # Status flags
+        self.uav1_state = np.array([2.5, 2.5, np.pi/4, 0.0, 0.0])
+        self.uav2_state = np.array([2.5, 27.5, -np.pi/4, 0.0, 0.0])
+
         self.goal1_reached = False
         self.goal2_reached = False
         self.running = False
 
-    # Simulation control
+        self.dynamic_obstacles = []
+
+    # Dynamic Obstacle API
+    def add_horizontal_obstacle(self, y, speed=1.0):
+        self.dynamic_obstacles.append(DynamicObstacle(
+            x=2.0, y=y, vx=speed, vy=0.0, size=0.5))
+
+    def add_vertical_obstacle(self, x, speed=1.0):
+        self.dynamic_obstacles.append(DynamicObstacle(
+            x=x, y=2.0, vx=0.0, vy=speed, size=0.5))
+
     def start(self):
         self.running = True
         self.goal1_reached = False
@@ -51,73 +60,71 @@ class MultiUAVSimulation:
         self.running = False
 
     def reset(self):
-        """Reset UAV states & flags."""
         self.uav1_state[:] = [2.5, 2.5, np.pi/4, 0.0, 0.0]
         self.uav2_state[:] = [2.5, 27.5, -np.pi/4, 0.0, 0.0]
         self.goal1_reached = False
         self.goal2_reached = False
+        # clear dynamic obstacles from map
+        self.dynamic_obstacles = []
 
-    # Helpers
     def check_goals(self):
-        """Check if UAVs reached their goals."""
         if not self.goal1_reached:
             if np.linalg.norm(self.uav1_state[:2] - self.goal1) < 0.5:
                 self.goal1_reached = True
-
         if not self.goal2_reached:
             if np.linalg.norm(self.uav2_state[:2] - self.goal2) < 0.5:
                 self.goal2_reached = True
 
     def check_uav_collision(self):
-        """Stop UAV2 if too close to UAV1 (priority behavior)."""
-        p1 = self.uav1_state[:2]
-        p2 = self.uav2_state[:2]
-        d = np.linalg.norm(p1 - p2)
-        return d < self.safety_distance
+        p1, p2 = self.uav1_state[:2], self.uav2_state[:2]
+        return np.linalg.norm(p1 - p2) < self.safety_distance
 
-    # Main simulation tick
     def step(self):
         if not self.running:
             return
 
-        # 1. Check for mutual collision
-        uav2_can_move = True
+        # Update dynamic obstacles
+        self.env.clear()
 
-        if self.check_uav_collision():
-            # UAV1 has priority → freeze UAV2
-            uav2_can_move = False
+        for obs in self.dynamic_obstacles:
+            obs.step(self.dt)
 
-        # 2. Compute forces for UAV1
+            # bounce on borders
+            if obs.pos[0] <= 1 or obs.pos[0] >= self.env.width - 1:
+                obs.vel[0] *= -1
+            if obs.pos[1] <= 1 or obs.pos[1] >= self.env.height - 1:
+                obs.vel[1] *= -1
+
+            self.env.paint_square(obs.pos[0], obs.pos[1], obs.size * 2)
+
+        # Collision between UAVs
+        uav2_can_move = not self.check_uav_collision()
+
+        # UAV1 control
         if not self.goal1_reached:
-            # Other UAV position used for repulsion
-            other1 = [self.uav2_state[:2]]
-            force1, dbg1 = self.planner.compute_force(
-                self.uav1_state[:2], self.goal1, self.env, other1
+            force1, _ = self.planner.compute_force(
+                self.uav1_state[:2], self.goal1, self.env,
+                [self.uav2_state[:2]]
             )
-            # Apply controller
             self.uav1_state = self.controller.step(self.uav1_state, force1)
 
-        # 3. Compute forces for UAV2
+        # UAV2 control
         if not self.goal2_reached and uav2_can_move:
-            other2 = [self.uav1_state[:2]]
-            force2, dbg2 = self.planner.compute_force(
-                self.uav2_state[:2], self.goal2, self.env, other2
+            force2, _ = self.planner.compute_force(
+                self.uav2_state[:2], self.goal2, self.env,
+                [self.uav1_state[:2]]
             )
             self.uav2_state = self.controller.step(self.uav2_state, force2)
 
-        # 4. Check goals
         self.check_goals()
-
-        # 5. Stop if both reached
         if self.goal1_reached and self.goal2_reached:
             self.running = False
 
-    # Data for GUI drawing
     def get_states(self):
-        """Return copies of UAV states for drawing."""
         return (
             np.copy(self.uav1_state),
             np.copy(self.uav2_state),
             np.copy(self.goal1),
             np.copy(self.goal2),
+            self.dynamic_obstacles
         )
