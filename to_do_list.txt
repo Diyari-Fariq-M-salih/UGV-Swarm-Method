@@ -23,17 +23,17 @@
 
 ### 🟪 Phase 4 — GUI System
 
-- [ ] Build PySide6 main window
-- [ ] Integrate Matplotlib canvas
-- [ ] Implement buttons and their callbacks
-- [ ] Click-to-paint obstacles
-- [ ] Add planner selection (PF only for now)
+- [X] Build PySide6 main window
+- [X] Integrate Matplotlib canvas
+- [X] Implement buttons and their callbacks
+- [X] Click-to-paint obstacles
+- [X] Add planner selection (PF only for now)
 
 ### 🟥 Phase 5 — Visualization
 
-- [ ] Draw map, obstacles, UAVs, paths
-- [ ] Smooth real-time updates
-- [ ] Goal & field vector visualization (optional)
+- [X] Draw map, obstacles, UAVs, paths
+- [X] Smooth real-time updates
+- [X] Goal & field vector visualization (optional)
 
 ### 🟫 Phase 6 — Testing & Polishing
 
