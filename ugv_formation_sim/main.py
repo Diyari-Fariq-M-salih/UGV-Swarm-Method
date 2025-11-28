@@ -6,7 +6,7 @@ def main():
     app = QApplication(sys.argv)
 
     window = MainWindow()
-    window.run()
+    window.show()
 
     sys.exit(app.exec_())
 
