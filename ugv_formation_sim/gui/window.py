@@ -22,9 +22,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("UGV Formation Simulator")
         self.setGeometry(100, 50, 1200, 700)
 
-        # ======================
+        
         # Layout Setup
-        # ======================
+        
         central = QWidget()
         self.setCentralWidget(central)
         main_layout = QHBoxLayout()
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         # Left Control Panel
         control_panel = QVBoxLayout()
 
-        # ========== Buttons ==========
+        #  Buttons 
         self.btn_add_circle = QPushButton("Add Circle Obstacle")
         self.btn_add_rect = QPushButton("Add Rectangle Obstacle")
         self.btn_set_start = QPushButton("Set Start Point")
@@ -44,25 +44,25 @@ class MainWindow(QMainWindow):
         control_panel.addWidget(self.btn_set_start)
         control_panel.addWidget(self.btn_set_goal)
 
-        # ========== Planner selection ==========
+        #  Planner selection 
         control_panel.addWidget(QLabel("Motion Planner:"))
         self.planner_select = QComboBox()
         self.planner_select.addItems(["A*", "RRT", "Potential Field"])
         control_panel.addWidget(self.planner_select)
 
-        # ========== Formation selection ==========
+        #  Formation selection 
         control_panel.addWidget(QLabel("Formation:"))
         self.formation_select = QComboBox()
         self.formation_select.addItems(["Triangle", "Diamond", "Arrow"])
         control_panel.addWidget(self.formation_select)
 
-        # ========== Leader selection ==========
+        #  Leader selection 
         control_panel.addWidget(QLabel("Leader Robot:"))
         self.leader_select = QComboBox()
         self.leader_select.addItems(["UGV 1", "UGV 2", "UGV 3"])
         control_panel.addWidget(self.leader_select)
 
-        # ========== Initialization Mode ==========
+        #  Initialization Mode 
         control_panel.addWidget(QLabel("Formation Initialization:"))
         self.init_mode_select = QComboBox()
         self.init_mode_select.addItems([
@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         ])
         control_panel.addWidget(self.init_mode_select)
 
-        # ========== Action buttons ==========
+        # action buttons
         self.btn_plan = QPushButton("Plan Path")
         self.btn_run = QPushButton("Run Simulation")
         self.btn_reset = QPushButton("Reset All")
@@ -82,9 +82,9 @@ class MainWindow(QMainWindow):
         control_panel.addWidget(self.btn_reset)
         control_panel.addStretch()
 
-        # ======================
+        
         # Canvas (Matplotlib)
-        # ======================
+        
         fig = Figure()
         self.canvas = FigureCanvas(fig)
         self.ax = fig.add_subplot(111)
@@ -96,9 +96,9 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(control_panel, 1)
         main_layout.addWidget(self.canvas, 4)
 
-        # ======================
+        
         # State Variables
-        # ======================
+        
         self.mode = None                 # for clicking modes
         self.start_point = None
         self.goal_point = None
@@ -112,9 +112,9 @@ class MainWindow(QMainWindow):
 
         self.controller = PurePursuitController()
 
-        # ======================
+        
         # Connections
-        # ======================
+        
         self.btn_add_circle.clicked.connect(self.activate_add_circle)
         self.btn_add_rect.clicked.connect(self.activate_add_rect)
         self.btn_set_start.clicked.connect(self.activate_set_start)
@@ -125,9 +125,9 @@ class MainWindow(QMainWindow):
 
         self.canvas.mpl_connect("button_press_event", self.on_canvas_click)
 
-    # ==============================
+    
     # Interaction Modes
-    # ==============================
+    
     def activate_add_circle(self):
         self.mode = "add_circle"
 
@@ -140,9 +140,9 @@ class MainWindow(QMainWindow):
     def activate_set_goal(self):
         self.mode = "set_goal"
 
-    # ==============================
+    
     # Canvas Click Handler
-    # ==============================
+    
     def on_canvas_click(self, event):
         if event.xdata is None:
             return
@@ -183,9 +183,9 @@ class MainWindow(QMainWindow):
             return
 
         # Manual robot placement
-        # -----------------------------------------------------------
+        
         # Manual placement of robots (Step 4)
-        # -----------------------------------------------------------
+        
         elif self.mode == "manual_place":
             # Allow EXACTLY 3 robots
             if self.manual_robot_index < 3:
@@ -212,9 +212,9 @@ class MainWindow(QMainWindow):
             return
 
 
-    # ==============================
+    
     # Redraw all obstacles / start / goal
-    # ==============================
+    
     def redraw_scene(self):
         self.ax.clear()
         self.ax.set_xlim(0, 20)
@@ -240,10 +240,11 @@ class MainWindow(QMainWindow):
         if self.goal_point is not None:
             self.ax.plot(self.goal_point[0], self.goal_point[1], "ro", markersize=10)
 
-    # ==============================
+    
     # Formation Initialization
-    # ==============================
+    
     def init_in_formation(self):
+        print("init_in_formation CALLED")
         sx, sy = self.start_point
         offsets = [(0, 0), (-1, -1), (1, -1)]
         self.robots = [
@@ -251,6 +252,7 @@ class MainWindow(QMainWindow):
         ]
 
     def init_overlapped(self):
+        print("init_overlapped CALLED")
         sx, sy = self.start_point
         self.robots = [UGV(sx, sy, 0), UGV(sx, sy, 0), UGV(sx, sy, 0)]
         self.spread_counter = 0
@@ -263,9 +265,9 @@ class MainWindow(QMainWindow):
         self.ax.text(1, 19, "Click 3 robot start positions", color="blue")
         self.canvas.draw()
 
-    # ==============================
+    
     # Path Planning
-    # ==============================
+    
     def plan_path(self):
         if self.start_point is None or self.goal_point is None:
             print("Start/goal missing.")
@@ -298,9 +300,9 @@ class MainWindow(QMainWindow):
         self.ax.plot(xs, ys, "b-", linewidth=2)
         self.canvas.draw()
 
-    # ==============================
+    
     # Reset All
-    # ==============================
+    
     def reset_all(self):
         self.start_point = None
         self.goal_point = None
@@ -312,41 +314,219 @@ class MainWindow(QMainWindow):
         self.redraw_scene()
         self.canvas.draw()
 
-    # ==============================
+    
     # Simulation (added in Step 5 later)
-    # ==============================
+    
     def run_simulation(self):
-        # User must plan a path first
+        # Must have path planned
         if self.start_point is None or self.goal_point is None or len(self.path) == 0:
             print("Plan a path first.")
             return
 
-        mode = self.init_mode_select.currentText()
+        init_mode = self.init_mode_select.currentText()
+        print("init_mode =", init_mode)
 
-        # -----------------------------------------
+        
         # Start in Formation
-        # -----------------------------------------
-        if mode == "Start in Formation":
+        
+        if init_mode == "Start in Formation":
             self.init_in_formation()
             print("Robots initialized in formation.")
-            print(self.robots)
-            return   # Step 5 will later start the timer
 
-        # -----------------------------------------
-        # Overlapped
-        # -----------------------------------------
-        elif mode == "Overlapped (Spread Out)":
+            # Draw robots immediately
+            self.redraw_scene()
+            for robot in self.robots:
+                self.draw_robot(robot)
+            self.canvas.draw()
+
+            return
+
+        
+        # Overlapped (Spread Out)
+        
+        elif init_mode == "Overlapped (Spread Out)":
             self.init_overlapped()
-            print("Robots initialized overlapped (will spread).")
-            print(self.robots)
-            return   # Step 5 adds motion later
+            print("Robots initialized overlapped.")
 
-        # -----------------------------------------
+            # Draw robots immediately
+            self.redraw_scene()
+            for robot in self.robots:
+                self.draw_robot(robot)
+            self.canvas.draw()
+
+            return
+
+        
         # Manual Placement
-        # -----------------------------------------
-        elif mode == "Manual Placement":
+        
+        elif init_mode == "Manual Placement":
             self.init_manual()
-            # This prints: "Manual placement ON.\nClick 3 robot start positions"
             print("Waiting for user to place 3 robots...")
             return
 
+        # Must have path planned
+        if self.start_point is None or self.goal_point is None or len(self.path) == 0:
+            print("Plan a path first.")
+            return
+
+        init_mode = self.init_mode_select.currentText()
+
+        
+        # Start in formation
+        
+        print("init_mode =", init_mode)
+
+        if init_mode == "Start in Formation":
+            self.init_in_formation()
+            print("Robots initialized in formation.")
+            return
+
+        
+        # Overlapped
+        
+        elif init_mode == "Overlapped (Spread Out)":
+            self.init_overlapped()
+            print("Robots initialized overlapped.")
+            return
+
+        
+        # Manual Placement
+        
+        elif init_mode == "Manual Placement":
+            self.init_manual()                     # << activate manual mode
+            print("Waiting for user to place 3 robots...")
+            return                                 # << IMPORTANT: stop here
+        
+        print("Robots:", self.robots)
+
+    def sim_step(self):
+        if not self.is_sim_running:
+            return
+
+        dt = 0.02
+
+        # ---- Leader selection ----
+        leader_idx = self.leader_select.currentIndex()
+        leader = self.robots[leader_idx]
+
+        # ---- Leader follows path ----
+        v, delta = self.controller.compute_control(leader, self.path)
+        leader.set_control(v, delta)
+        leader.update(dt)
+
+        # ---- Formation triangle ----
+        offsets = [
+            (0, 0),
+            (-1, -1),
+            (1, -1)
+        ]
+
+        ct = math.cos(leader.theta)
+        st = math.sin(leader.theta)
+
+        rotated_offsets = []
+        for ox, oy in offsets:
+            rx = ox * ct - oy * st
+            ry = ox * st + oy * ct
+            rotated_offsets.append((rx, ry))
+
+        # ---- Followers ----
+        for i, robot in enumerate(self.robots):
+            if i == leader_idx:
+                continue
+
+            dx, dy = rotated_offsets[i]
+            tx = leader.x + dx
+            ty = leader.y + dy
+
+            follower_path = [(robot.x, robot.y), (tx, ty)]
+            v_f, d_f = self.controller.compute_control(robot, follower_path)
+            robot.set_control(v_f, d_f)
+            robot.update(dt)
+
+        # ---- REDRAW ----
+        self.ax.clear()
+        self.ax.set_xlim(0, 20)
+        self.ax.set_ylim(0, 20)
+        self.ax.set_aspect("equal")
+        self.ax.set_title("Simulation")
+
+        # Draw obstacles
+        self.draw_obstacles()
+
+        # Draw path
+        xs = [p[0] for p in self.path]
+        ys = [p[1] for p in self.path]
+        self.ax.plot(xs, ys, "b--")
+
+        # Draw robots
+        for robot in self.robots:
+            self.draw_robot(robot)
+
+        # Draw formation lines
+        lx, ly = leader.x, leader.y
+        for i, robot in enumerate(self.robots):
+            if i != leader_idx:
+                self.ax.plot([lx, robot.x], [ly, robot.y], "gray", linestyle="--")
+
+        self.canvas.draw()
+
+
+    def draw_obstacles(self):
+        """Draw all static obstacles"""
+        for obs in self.obstacles:
+            if obs[0] == "circle":
+                _, cx, cy, r = obs
+                circ = plt.Circle((cx, cy), r, color='r', alpha=0.3)
+                self.ax.add_patch(circ)
+            elif obs[0] == "rect":
+                _, x1, y1, x2, y2 = obs
+                rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, color='m', alpha=0.3)
+                self.ax.add_patch(rect)
+
+
+        for obs in self.obstacles:
+            if obs[0] == "circle":
+                _, cx, cy, r = obs
+                circ = plt.Circle((cx, cy), r, color='r', alpha=0.3)
+                self.ax.add_patch(circ)
+
+            elif obs[0] == "rect":
+                _, x1, y1, x2, y2 = obs
+                rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, color='m', alpha=0.3)
+                self.ax.add_patch(rect)
+
+
+        xs = [p[0] for p in self.path]
+        ys = [p[1] for p in self.path]
+        self.ax.plot(xs, ys, "b--")
+
+        # Draw robots
+        for robot in self.robots:
+            self.draw_robot(robot)
+
+        # Draw formation lines
+        lx, ly = leader.x, leader.y
+        for i, robot in enumerate(self.robots):
+            if i != leader_idx:
+                self.ax.plot([lx, robot.x], [ly, robot.y], "gray", linestyle="--")
+
+        self.canvas.draw()
+
+    def draw_robot(self, robot):
+        x, y, t = robot.pose()
+
+        size = 0.35  # triangle size
+
+        # Triangle points
+        p1 = (x + size * math.cos(t),
+              y + size * math.sin(t))
+        p2 = (x + size * math.cos(t + 2.5),
+              y + size * math.sin(t + 2.5))
+        p3 = (x + size * math.cos(t - 2.5),
+              y + size * math.sin(t - 2.5))
+
+        xs = [p1[0], p2[0], p3[0]]
+        ys = [p1[1], p2[1], p3[1]]
+
+        self.ax.fill(xs, ys, color="blue")
