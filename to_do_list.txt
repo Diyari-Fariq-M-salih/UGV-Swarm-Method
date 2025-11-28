@@ -3,9 +3,9 @@
 
 ### 🟦 Phase 1 — Foundation
 
-- [ ] Implement full `environment.py`
-- [ ] Implement occupancy grid inflate & coordinate transforms
-- [ ] Define UAV state structure in `simulation.py`
+- [X] Implement full `environment.py`
+- [X] Implement occupancy grid inflate & coordinate transforms
+- [X] Define UAV state structure in `simulation.py`
 
 ### 🟩 Phase 2 — Potential Field Planner
 
