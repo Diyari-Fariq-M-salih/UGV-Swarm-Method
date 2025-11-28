@@ -1,7 +1,7 @@
 import heapq
 import math
-
 from .planner_base import PathPlanner
+from .collision import collision_point
 
 class AStarPlanner(PathPlanner):
     def __init__(self, grid_resolution=0.5):
@@ -15,25 +15,23 @@ class AStarPlanner(PathPlanner):
         r = self.res
         directions = [
             (r, 0), (-r, 0), (0, r), (0, -r),
-            (r, r), (r, -r), (-r, r), (-r, -r)
+            (r, r), (r, -r), (-r, r), (-r, -r),
         ]
-        return [(x+dx, y+dy) for dx,dy in directions]
+        return [(x + dx, y + dy) for dx, dy in directions]
 
-    def collision(self, point, obstacles):
-        px, py = point
-        for ox, oy, rad in obstacles:
-            if math.hypot(px-ox, py-oy) <= rad:
-                return True
-        return False
+    def snap(self, x, y):
+        return (
+            round(x / self.res) * self.res,
+            round(y / self.res) * self.res
+        )
 
     def plan(self, start, goal, obstacles):
-        start = (round(start[0]/self.res)*self.res,
-                 round(start[1]/self.res)*self.res)
-        goal  = (round(goal[0]/self.res)*self.res,
-                 round(goal[1]/self.res)*self.res)
+        start = self.snap(*start)
+        goal  = self.snap(*goal)
 
         open_set = []
         heapq.heappush(open_set, (0, start))
+
         came_from = {}
         g_score = {start: 0}
 
@@ -44,7 +42,7 @@ class AStarPlanner(PathPlanner):
                 return self.reconstruct_path(came_from, current)
 
             for neighbor in self.get_neighbors(current):
-                if self.collision(neighbor, obstacles):
+                if collision_point(neighbor, obstacles):
                     continue
 
                 tentative_g = g_score[current] + self.heuristic(current, neighbor)
