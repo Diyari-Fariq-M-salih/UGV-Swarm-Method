@@ -108,6 +108,8 @@ class MainWindow(QMainWindow):
         self.path = []
 
         self.robots = []
+        # Smoothed follower targets
+        self.follower_targets = [(0,0), (0,0), (0,0)]
         self.manual_robot_index = 0
         self.spread_counter = 0
         self.is_sim_running = False
@@ -129,6 +131,42 @@ class MainWindow(QMainWindow):
         self.canvas.mpl_connect("button_press_event", self.on_canvas_click)
 
     
+    def smooth_target(self, prev, new, alpha=0.15):
+        """Exponential smoothing to prevent sudden formation jumps."""
+        px, py = prev
+        nx, ny = new
+        return (px + alpha * (nx - px),
+                py + alpha * (ny - py))
+
+
+    def obstacle_repulsion(self, robot, influence_radius=2.5, gain=1.3):
+        """Returns a repulsive force vector pushing robot away from obstacles."""
+        rx, ry, _ = robot.pose()
+        fx, fy = 0.0, 0.0
+
+        for obs in self.obstacles:
+            if obs[0] == "circle":
+                _, cx, cy, r = obs
+                dx, dy = rx - cx, ry - cy
+                dist = math.hypot(dx, dy) - r
+
+            elif obs[0] == "rect":
+                _, x1, y1, x2, y2 = obs
+                cx = min(max(rx, x1), x2)
+                cy = min(max(ry, y1), y2)
+                dx, dy = rx - cx, ry - cy
+                dist = math.hypot(dx, dy)
+
+            else:
+                continue
+
+            if dist < influence_radius and dist > 0.0001:
+                strength = gain / (dist ** 2)
+                fx += strength * (dx / dist)
+                fy += strength * (dy / dist)
+
+        return fx, fy
+
     # Interaction Modes
     
     def activate_add_circle(self):
@@ -372,23 +410,38 @@ class MainWindow(QMainWindow):
         offsets = [(0,0), (-1,-1), (1,-1)]
         ct, st = math.cos(leader.theta), math.sin(leader.theta)
 
-        rotated = []
+        rotated_offsets = []
         for ox, oy in offsets:
-            rx = ox*ct - oy*st
-            ry = ox*st + oy*ct
-            rotated.append((rx, ry))
+            rx = ox * ct - oy * st
+            ry = ox * st + oy * ct
+            rotated_offsets.append((rx, ry))
 
         for i, robot in enumerate(self.robots):
             if i == leader_idx:
                 continue
 
-            dx, dy = rotated[i]
-            tx, ty = leader.x + dx, leader.y + dy
+            # --- Desired formation position (unfiltered) ---
+            dx, dy = rotated_offsets[i]
+            raw_tx = leader.x + dx
+            raw_ty = leader.y + dy
 
-            follower_path = [(robot.x, robot.y), (tx, ty)]
+            # --- Smooth the formation target ---
+            prev_tx, prev_ty = self.follower_targets[i]
+            smooth_tx, smooth_ty = self.smooth_target((prev_tx, prev_ty), (raw_tx, raw_ty))
+            self.follower_targets[i] = (smooth_tx, smooth_ty)
+
+            # --- Add obstacle avoidance force ---
+            fx, fy = self.obstacle_repulsion(robot)
+
+            final_tx = smooth_tx + fx
+            final_ty = smooth_ty + fy
+
+            # --- Drive robot toward final corrected target ---
+            follower_path = [(robot.x, robot.y), (final_tx, final_ty)]
             v_f, d_f = self.controller.compute_control(robot, follower_path)
             robot.set_control(v_f, d_f)
             robot.update(dt)
+
 
         # draw everything
         self.ax.clear()
