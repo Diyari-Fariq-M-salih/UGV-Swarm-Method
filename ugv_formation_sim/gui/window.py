@@ -69,6 +69,9 @@ class MainWindow(QMainWindow):
         self.ax.set_aspect('equal')
         self.ax.set_title("Environment")
 
+        self.ax.set_xlim(0, 20)
+        self.ax.set_ylim(0, 20)
+
         # Add panels to main layout
         main_layout.addLayout(control_panel, stretch=1)
         main_layout.addWidget(self.canvas, stretch=4)
@@ -164,6 +167,9 @@ class MainWindow(QMainWindow):
         self.ax.clear()
         self.ax.set_title("Environment")
         self.ax.set_aspect('equal')
+
+        self.ax.set_xlim(0, 20)
+        self.ax.set_ylim(0, 20)
 
         self.obstacles = []
         self.path = []
