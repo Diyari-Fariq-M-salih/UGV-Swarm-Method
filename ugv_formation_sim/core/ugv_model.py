@@ -18,9 +18,9 @@ class UGV:
         self.v = 0.0
         self.delta = 0.0
 
-        self.max_speed = 2.0
+        self.max_speed = 1.0
         self.max_steering = math.radians(20)
-        self.acc_limit = 1.0
+        self.acc_limit = 0.5
 
         self.L = wheelbase
 
