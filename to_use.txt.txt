@@ -1,0 +1,3 @@
+OPEN pf_gui env, or any env with the requirements
+
+run main.py
