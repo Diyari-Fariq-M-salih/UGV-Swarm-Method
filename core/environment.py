@@ -9,7 +9,17 @@ class OccupancyGrid:
     final occupancy = static OR dynamic
     """
 
-    def __init__(self, width, height, resolution=1.0):
+    def inflate_obstacles(self, radius=1.0):
+        cells = int(radius / self.resolution)
+        if cells <= 0:
+            return
+
+        struct = np.ones((2 * cells + 1, 2 * cells + 1), dtype=np.uint8)
+        inflated = binary_dilation(self.static_grid, structure=struct)
+        self.static_grid = inflated.astype(np.uint8)
+
+
+    def __init__(self, width, height, resolution=5.0):
         self.width = int(width)
         self.height = int(height)
         self.resolution = float(resolution)

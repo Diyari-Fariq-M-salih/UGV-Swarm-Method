@@ -36,6 +36,7 @@ class MultiUAVSimulation:
         self.running = False
 
     def compute_paths(self):
+        self.env.inflate_obstacles(radius=1.5)
         self.planner1.plan(self.uav1_state[:2], self.goal1, self.env)
         self.planner2.plan(self.uav2_state[:2], self.goal2, self.env)
 
