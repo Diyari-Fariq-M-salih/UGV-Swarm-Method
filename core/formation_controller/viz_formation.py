@@ -24,14 +24,15 @@ def main():
     fc.visualize_formation()
     plt.show()
     # Test scaling the formation
-    scale_factor = 0.8
-    fc.scale_interdistances(scale_factor)
+    scale_factor = 0.9
+    fc.scale_positions(scale_factor)
     print(f"\nAfter scaling by factor {scale_factor}:")
     fc.visualize_formation()
     plt.show()
     print("Bearings (degrees):")
     for (i, j), bearing in fc.bij.items():
         print(f"  From {j} to {i}: {bearing:.2f}°")
+
 
 if __name__ == "__main__":
     main()

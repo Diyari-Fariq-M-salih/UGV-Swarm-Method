@@ -28,6 +28,7 @@ class Formation:
         self.dij = {}                           # dict: (i,j) → distance_ij
         self.compute_distances()
         self.centroid = self.compute_centroid()
+        self.formation_radius = self.compute_formation_radius()
 
     def compute_centroid(self):
         xs = [pos[0] for pos in self.polygon.values()]
@@ -111,7 +112,13 @@ class Formation:
                 pos_robot = self.polygon[robot]
                 pos_neighbor = self.polygon[neighbor]
                 plt.plot([pos_robot[0], pos_neighbor[0]], [pos_robot[1], pos_neighbor[1]], 'k--', alpha=0.5)
-
+        # visualize centroid and radius
+        self.centroid = self.compute_centroid()
+        self.formation_radius = self.compute_formation_radius()
+        print(f"Centroid: {self.centroid}, Formation Radius: {self.formation_radius:.2f}")
+        plt.plot(self.centroid[0], self.centroid[1], 'ro', label='Centroid')
+        circle = plt.Circle(self.centroid, self.formation_radius, color='r', fill=False, linestyle='--', label='Formation Radius')
+        plt.gca().add_artist(circle)
         plt.title("Robot Formation")
         plt.xlabel("X Position")
         plt.ylabel("Y Position")
