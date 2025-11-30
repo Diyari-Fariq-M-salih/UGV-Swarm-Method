@@ -48,7 +48,8 @@ class elasticBand:
     def deform_eband(self):
         """Update the elastic band by applying contraction and repulsion forces."""
         n = len(self.bubbles)
-        
+        n_removed = 0
+        n_inserted = 0
         # First pass: update positions
         for i in range(1, n - 1):
             b_prev = self.bubbles[i - 1]
@@ -63,6 +64,19 @@ class elasticBand:
 
             # Total force
             f_total = f_contraction + f_repulsion
+            # OPTIONAL:
+            # project force to normal direction
+            tangent = np.array([b_prev.x - b_next.x, b_prev.y - b_next.y])
+            dot_prod = np.dot(f_total, tangent)
+            prod = dot_prod * tangent
+            norm = np.linalg.norm(np.array(tangent))
+            if norm > 1e-6:
+                f_total = f_total - prod / (norm**2)
+
+            # Update bubble position
+            b_curr.x += self.alpha * f_total[0]
+            b_curr.y += self.alpha * f_total[1]
+
 
             # Project force perpendicular to band direction (tangent vector)
             tangent = np.array([b_next.x - b_prev.x, b_next.y - b_prev.y])
@@ -83,28 +97,41 @@ class elasticBand:
         self.update_bubble_radius(self.bubbles[0])
         self.update_bubble_radius(self.bubbles[-1])
 
-        # Second pass: check for topology changes (insert/remove bubbles)
-        i = 1
-        while i < len(self.bubbles) - 1:
-            b_prev = self.bubbles[i - 1]
+        # Second pass: Insert bubbles where there are gaps (no overlap)
+        i = 0
+        while (i < len(self.bubbles) - 1):
             b_curr = self.bubbles[i]
+            b_next = self.bubbles[i + 1]
             
-            # Check for overlap and insert bubble if needed
-            if self.check_overlap(b_prev, b_curr):
-                self.insert_bubble(i - 1)
-                i += 1  # Skip the newly inserted bubble
-            i += 1
+            # Check if bubbles DON'T overlap - need to insert
+            if not self.check_overlap(b_curr, b_next):
+                n_inserted += 1
+                self.insert_bubble(i)
+                # Don't increment i, check the newly inserted bubble
+            else:
+                i += 1
         
-        # Remove unnecessary bubbles if they are too far apart
+        # Third pass: Remove redundant bubbles
+        # A bubble is redundant if removing it still keeps the band connected
         i = 1
-        while i < len(self.bubbles) - 1:
-            b1 = self.bubbles[i - 1]
-            b2 = self.bubbles[i + 1]
-            dist = np.linalg.norm(np.array([b1.x - b2.x, b1.y - b2.y]))
-            # Remove bubble i if bubbles i-1 and i+1 overlap
-            if dist < (b1.radius + b2.radius):
+        while (i < len(self.bubbles) - 1):
+            b_prev = self.bubbles[i - 1]
+            b_next = self.bubbles[i + 1]
+            
+            # Check if prev and next would still overlap without current bubble
+            dist_neighbors = np.linalg.norm(np.array([b_next.x - b_prev.x, b_next.y - b_prev.y]))
+            
+            # If neighbors would still overlap (with margin), current bubble is redundant
+            if (dist_neighbors < (b_prev.radius + b_next.radius)):
+                n_removed += 1
                 self.remove_bubble(i)
-            i += 1
+                # Don't increment i, check next bubble at same position
+            else:
+                i += 1
+        
+        if n_removed > 0 or n_inserted > 0:
+            print(f"Removed {n_removed} redundant bubbles. Inserted {n_inserted} new bubbles.")
+
     # helper functions
 
     def insert_bubble(self, index):
@@ -115,6 +142,12 @@ class elasticBand:
         b2 = self.bubbles[index + 1]
         new_x = (b1.x + b2.x) / 2.0
         new_y = (b1.y + b2.y) / 2.0
+        # dist = np.linalg.norm(np.array([b2.x - b1.x, b2.y - b1.y]))
+        # sum_radii = b1.radius + b2.radius
+        # new_radius =  (dist - sum_radii) / 2.0
+        # if new_radius < self.robot_radius:
+        #     new_radius = self.robot_radius
+        # new_bubble = Bubble((new_x, new_y), new_radius)
         new_bubble = Bubble((new_x, new_y), self.robot_radius)
         self.update_bubble_radius(new_bubble)
         self.bubbles.insert(index + 1, new_bubble)
@@ -186,13 +219,12 @@ class elasticBand:
 
     def check_overlap(self, b1: Bubble, b2: Bubble):
         """
-        Check if two bubbles are too close (need insertion between them).
-        Returns True if distance is less than sum of radii (indicating they should split).
+        Check if two bubbles overlap.
+        Returns True if they overlap (distance < sum of radii).
         """
         dist = np.linalg.norm(np.array([b1.x - b2.x, b1.y - b2.y]))
-        # Only insert if distance is small enough to indicate potential collision
-        # Use a threshold smaller than sum of radii
-        return dist  < b1.radius + b2.radius
+        # Bubbles overlap if distance is less than sum of radii
+        return dist < (b1.radius + b2.radius)
 
     def contraction_force(self, b_prev: Bubble, b_curr: Bubble, b_next: Bubble):
         """
@@ -249,7 +281,7 @@ class elasticBand:
 
         # Repulsive force opposes gradient (away from obstacles)
         # When rho increases (approaching obstacle), we want negative force
-        f_repulsion = -self.kr * (self.rho0 - rho) * grad_rho
+        f_repulsion = - self.kr * (self.rho0 - rho) * grad_rho
         
         return f_repulsion
 

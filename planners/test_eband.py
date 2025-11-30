@@ -144,9 +144,10 @@ def test_eband():
     
     # Run deformation for several iterations
     print("Running deformation...")
-    N_iterations = 50
+    N_iterations = 10
     for iteration in range(N_iterations):
         eband.deform_eband()
+        print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
         if iteration % 10 == 9:
             print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
     
@@ -164,11 +165,33 @@ def test_eband():
     print("Running deformation with second obstacle...")
     for iteration in range(N_iterations):
         eband.deform_eband()
+        print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
         if iteration % 10 == 9:
             print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
     
     # Visualize final state
     visualize_eband(eband, env, f"Final Elastic Band - Test 2 ({N_iterations} total iterations)")
+    
+    # Test 3: Move obstacle to path location
+    print("\nTest 3: Moving obstacle to block the path")
+    # Clear second obstacle and add it at new location
+    env.occupancy_grid = np.zeros((env.grid_width, env.grid_height))
+    env.add_obstacle(10.0, 10.0, 2.0)  # Re-add first obstacle
+    env.add_obstacle(16.0, 9.0, 1.0)  # Add second obstacle directly on path
+    
+    # Visualize before deformation
+    visualize_eband(eband, env, "Elastic Band with Obstacle on Path - Before Deformation")
+    
+    # Run more deformation iterations
+    print("Running deformation with obstacle on path...")
+    for iteration in range(N_iterations):
+        eband.deform_eband()
+        print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
+        if iteration % 10 == 9:
+            print(f"  Iteration {iteration + 1}: {len(eband.bubbles)} bubbles")
+    
+    # Visualize final state
+    visualize_eband(eband, env, f"Final Elastic Band - Test 3 ({3*N_iterations} total iterations)")
     
     print("\nTest complete!")
     print(f"Final number of bubbles: {len(eband.bubbles)}")
@@ -180,3 +203,4 @@ def test_eband():
 
 if __name__ == "__main__":
     test_eband()
+    plt.show()
