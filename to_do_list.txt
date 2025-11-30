@@ -37,7 +37,7 @@
 
 ### 🟫 Phase 6 — Testing & Polishing
 
-- [ ] Test PF convergence on simple maps
-- [ ] Validate obstacle avoidance
-- [ ] Multi-UAV interaction testing
-- [ ] Add logging & diagnostics
+- [X] Test PF convergence on simple maps
+- [X] Validate obstacle avoidance
+- [X] Multi-UAV interaction testing
+- [X] Add logging & diagnostics
