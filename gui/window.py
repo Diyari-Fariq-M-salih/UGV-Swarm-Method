@@ -5,6 +5,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QTimer
 from gui.canvas_widget import CanvasWidget
 
+from planners.potential_field import PotentialFieldPlanner
+from planners.a_star import AStarPlanner
+from planners.rrt import RRTPlanner
+
+import imageio
+
+
 class MainWindow(QWidget):
     def __init__(self, env, sim):
         super().__init__()
@@ -12,7 +19,7 @@ class MainWindow(QWidget):
         self.env = env
         self.sim = sim
 
-        self.setWindowTitle("Multi-UAV PF Simulator (Smooth FPS)")
+        self.setWindowTitle("Multi-UAV Simulator with PF / A* / RRT and GIF Recording")
         self.resize(900, 700)
 
         # Canvas
@@ -24,12 +31,14 @@ class MainWindow(QWidget):
         self.clear_btn = QPushButton("Clear Obstacles")
         self.add_obs_btn = QPushButton("Add Obstacle Mode")
 
+        self.gif_btn = QPushButton("Record GIF")
+
         self.horiz_btn = QPushButton("Add Horizontal Moving Obstacle")
         self.vert_btn = QPushButton("Add Vertical Moving Obstacle")
 
         self.planner_label = QLabel("Planner:")
         self.planner_dropdown = QComboBox()
-        self.planner_dropdown.addItems(["Potential Field"])
+        self.planner_dropdown.addItems(["Potential Field", "A*", "RRT"])
 
         self.status_label = QLabel("Status: Idle")
 
@@ -43,6 +52,7 @@ class MainWindow(QWidget):
         top.addWidget(self.add_obs_btn)
         top.addWidget(self.planner_label)
         top.addWidget(self.planner_dropdown)
+        top.addWidget(self.gif_btn)
 
         mid = QHBoxLayout()
         mid.addWidget(self.horiz_btn)
@@ -62,27 +72,39 @@ class MainWindow(QWidget):
         self.add_obs_btn.clicked.connect(self.toggle_add_obstacle)
         self.horiz_btn.clicked.connect(self.add_horizontal)
         self.vert_btn.clicked.connect(self.add_vertical)
+        self.gif_btn.clicked.connect(self.toggle_gif_record)
 
         self.canvas.canvas.mpl_connect("button_press_event", self.on_click)
 
-        # DOUBLE TIMER SYSTEM
-
-        # Physics timer (simulation)
+        # Double timer system
         self.sim_timer = QTimer()
         self.sim_timer.timeout.connect(self.on_sim_step)
-        self.sim_timer.start(int(self.sim.dt * 1000))   # dt=0.1 → 10 Hz
+        self.sim_timer.start(int(self.sim.dt * 1000))   # physics timer (10 Hz)
 
-        # Render timer (graphics refresh)
         self.render_timer = QTimer()
         self.render_timer.timeout.connect(self.update_canvas)
-        self.render_timer.start(16)                     # ~60 FPS
+        self.render_timer.start(16)                     # render timer (~60 FPS)
 
         self.add_mode = False
 
-    # Button/Control Handlers
+        # GIF recording
+        self.recording = False
+        self.frames = []
+
+    # Controls
+
     def on_start(self):
+        choice = self.planner_dropdown.currentText()
+
+        if choice == "Potential Field":
+            self.sim.planner = PotentialFieldPlanner()
+        elif choice == "A*":
+            self.sim.planner = AStarPlanner()
+        elif choice == "RRT":
+            self.sim.planner = RRTPlanner()
+
         self.sim.start()
-        self.status_label.setText("Status: Running")
+        self.status_label.setText(f"Status: Running ({choice})")
 
     def on_stop(self):
         self.sim.stop()
@@ -113,23 +135,45 @@ class MainWindow(QWidget):
         self.sim.reset()
         self.update_canvas()
 
-    # Physics Timer Callback (10 Hz)
+    # GIF Recording
+
+    def toggle_gif_record(self):
+        if not self.recording:
+            self.frames = []
+            self.recording = True
+            self.gif_btn.setText("Stop & Save GIF")
+            self.status_label.setText("Recording GIF...")
+        else:
+            self.recording = False
+            self.gif_btn.setText("Record GIF")
+
+            try:
+                imageio.mimsave("simulation.gif", self.frames, fps=15)
+                self.status_label.setText("Saved: simulation.gif")
+            except Exception as e:
+                self.status_label.setText(f"GIF save failed: {e}")
+
+    # Timers
+
     def on_sim_step(self):
         if self.sim.running:
             self.sim.step()
 
-    # Render Timer Callback (~60 FPS)
     def update_canvas(self):
         self.canvas.draw_environment(self.env)
 
         u1, u2, g1, g2, dyn_list = self.sim.get_states()
-
         self.canvas.draw_uav(u1, "blue", L=self.sim.controller.L)
-        self.canvas.draw_uav(u2, "red",  L=self.sim.controller.L)
+        self.canvas.draw_uav(u2, "red", L=self.sim.controller.L)
 
         self.canvas.draw_goal(g1, "blue", marker="x")
-        self.canvas.draw_goal(g2, "red",  marker="o")
+        self.canvas.draw_goal(g2, "red", marker="o")
 
         self.canvas.draw_dynamic_obstacles(dyn_list)
 
         self.canvas.refresh()
+
+        # Capture frame for GIF
+        if self.recording:
+            buf = self.canvas.fig.canvas.buffer_rgba()
+            self.frames.append(np.array(buf))
