@@ -2,17 +2,32 @@ import numpy as np
 import copy
 
 class DynamicObstacle:
-    def __init__(self, x, y, vx, vy, size=1.0):
+    def __init__(self, x, y, vx, vy, size=1.0, env=None):
         self.pos = np.array([x, y], dtype=float)
         self.vel = np.array([vx, vy], dtype=float)
         self.size = size
+        self.env = env  # for bounce boundaries
 
     def step(self, dt):
         self.pos += self.vel * dt
 
+        # BOUNCE LOGIC (A)
+        if self.pos[0] < 0:
+            self.pos[0] = 0
+            self.vel[0] *= -1
+        if self.pos[0] > self.env.width:
+            self.pos[0] = self.env.width
+            self.vel[0] *= -1
+
+        if self.pos[1] < 0:
+            self.pos[1] = 0
+            self.vel[1] *= -1
+        if self.pos[1] > self.env.height:
+            self.pos[1] = self.env.height
+            self.vel[1] *= -1
+
 
 class MultiUAVSimulation:
-
     def __init__(self, env, planner, controller,
                  goal1, goal2, dt=0.1, safety_distance=5.0):
 
@@ -35,10 +50,9 @@ class MultiUAVSimulation:
         self.goal2_reached = False
         self.running = False
 
-        # NEW: dynamic obstacles list
         self.dynamic_obstacles = []
 
-
+    # ----------------------------
     def compute_paths(self):
         self.env.inflate_obstacles(radius=1.5)
 
@@ -47,21 +61,19 @@ class MultiUAVSimulation:
         if hasattr(self.planner2, "plan"):
             self.planner2.plan(self.uav2_state[:2], self.goal2, self.env)
 
-
-    # NEW FUNCTIONS ADDED
+    # ----------------------------
     def add_horizontal_obstacle(self, y=15, speed=1.0):
-        obs = DynamicObstacle(x=0.0, y=y, vx=speed, vy=0.0, size=1.0)
+        obs = DynamicObstacle(x=0, y=y, vx=speed, vy=0.0, size=1.0, env=self.env)
         self.dynamic_obstacles.append(obs)
 
     def add_vertical_obstacle(self, x=15, speed=1.0):
-        obs = DynamicObstacle(x=x, y=0.0, vx=0.0, vy=speed, size=1.0)
+        obs = DynamicObstacle(x=x, y=0, vx=0.0, vy=speed, size=1.0, env=self.env)
         self.dynamic_obstacles.append(obs)
 
-
+    # ----------------------------
     def pure_pursuit_force(self, pos, planner, lookahead=1.5):
         if not hasattr(planner, "path"):
             return np.zeros(2)
-
         if not planner.path:
             return np.zeros(2)
 
@@ -75,7 +87,7 @@ class MultiUAVSimulation:
         diff = wp - pos
         dist = np.linalg.norm(diff)
 
-        if dist < 0.5 and planner.current_wp < len(planner.path) - 1:
+        if dist < 0.4 and planner.current_wp < len(planner.path)-1:
             planner.current_wp += 1
 
         if dist < 1e-6:
@@ -86,57 +98,91 @@ class MultiUAVSimulation:
     def avoidance_force(self, pos, other_pos, radius=5.0, k=0.5):
         diff = pos - other_pos
         dist = np.linalg.norm(diff)
-        if dist >= radius or dist < 1e-6:
+        if dist < 1e-6 or dist >= radius:
             return np.zeros(2)
         return k * (1/dist - 1/radius) * (diff / dist)
 
-
+    # ----------------------------
     def step(self):
         if not self.running:
             return
 
-        # NEW: move + paint dynamic obstacles
+        # MOVE DYNAMIC OBSTACLES
         self.env.clear_dynamic()
         for obs in self.dynamic_obstacles:
             obs.step(self.dt)
             self.env.paint_dynamic_square(obs.pos[0], obs.pos[1], obs.size)
 
-        # UAV 1
-        if hasattr(self.planner1, "path"):
-            f1_path = self.pure_pursuit_force(self.uav1_state[:2], self.planner1)
+        # ------------------------
+        # EVENT-BASED REPLANNING (R1)
+        # ------------------------
+        # UAV1
+        if hasattr(self.planner1, "path") and not self.goal1_reached:
+            if self.planner1.current_wp < len(self.planner1.path):
+                wp = self.planner1.path[self.planner1.current_wp]
+                gx, gy = self.env.world_to_grid(*wp)
+                if self.env.get_occupancy_grid(gx, gy) == 1:
+                    self.planner1.plan(self.uav1_state[:2], self.goal1, self.env)
+
+        # UAV2
+        if hasattr(self.planner2, "path") and not self.goal2_reached:
+            if self.planner2.current_wp < len(self.planner2.path):
+                wp = self.planner2.path[self.planner2.current_wp]
+                gx, gy = self.env.world_to_grid(*wp)
+                if self.env.get_occupancy_grid(gx, gy) == 1:
+                    self.planner2.plan(self.uav2_state[:2], self.goal2, self.env)
+
+        # ------------------------
+        # UAV1 MOTION
+        # ------------------------
+        if not self.goal1_reached:
+            if hasattr(self.planner1, "path"):
+                f1_path = self.pure_pursuit_force(self.uav1_state[:2], self.planner1)
+            else:
+                f1_path, _ = self.planner1.compute_force(
+                    self.uav1_state[:2], self.goal1, self.env,
+                    [self.uav2_state[:2]]
+                )
         else:
-            f1_path, _ = self.planner1.compute_force(
-                self.uav1_state[:2], self.goal1, self.env,
-                [self.uav2_state[:2]]
-            )
+            f1_path = np.zeros(2)
 
         f1_avoid = self.avoidance_force(self.uav1_state[:2], self.uav2_state[:2])
         f1 = f1_path + f1_avoid
-        self.uav1_state = self.controller.step(self.uav1_state, f1)
 
-        # UAV 2
-        if hasattr(self.planner2, "path"):
-            f2_path = self.pure_pursuit_force(self.uav2_state[:2], self.planner2)
+        if not self.goal1_reached:
+            self.uav1_state = self.controller.step(self.uav1_state, f1)
+
+        if np.linalg.norm(self.uav1_state[:2] - self.goal1) < 0.5:
+            self.goal1_reached = True
+
+        # ------------------------
+        # UAV2 MOTION
+        # ------------------------
+        if not self.goal2_reached:
+            if hasattr(self.planner2, "path"):
+                f2_path = self.pure_pursuit_force(self.uav2_state[:2], self.planner2)
+            else:
+                f2_path, _ = self.planner2.compute_force(
+                    self.uav2_state[:2], self.goal2, self.env,
+                    [self.uav1_state[:2]]
+                )
         else:
-            f2_path, _ = self.planner2.compute_force(
-                self.uav2_state[:2], self.goal2, self.env,
-                [self.uav1_state[:2]]
-            )
+            f2_path = np.zeros(2)
 
         f2_avoid = self.avoidance_force(self.uav2_state[:2], self.uav1_state[:2])
         f2 = f2_path + f2_avoid
-        self.uav2_state = self.controller.step(self.uav2_state, f2)
 
-        # Goals
-        if np.linalg.norm(self.uav1_state[:2] - self.goal1) < 0.5:
-            self.goal1_reached = True
+        if not self.goal2_reached:
+            self.uav2_state = self.controller.step(self.uav2_state, f2)
+
         if np.linalg.norm(self.uav2_state[:2] - self.goal2) < 0.5:
             self.goal2_reached = True
 
+        # STOP ALL ONLY IF BOTH DONE
         if self.goal1_reached and self.goal2_reached:
             self.running = False
 
-
+    # ----------------------------
     def start(self):
         self.running = True
         self.goal1_reached = False
@@ -153,17 +199,15 @@ class MultiUAVSimulation:
         self.goal2_reached = False
         self.running = False
 
-        # Reset planners
         if hasattr(self.planner1, "path"):
             self.planner1.path = []
             self.planner1.current_wp = 0
+
         if hasattr(self.planner2, "path"):
             self.planner2.path = []
             self.planner2.current_wp = 0
 
-        # Reset dynamic obstacles
         self.dynamic_obstacles = []
-
 
     def get_states(self):
         return (
