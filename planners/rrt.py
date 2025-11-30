@@ -83,9 +83,7 @@ class RRTPlanner:
 
         return smooth
 
-    # ---------------------------------------
     #  RRT PLANNING
-    # ---------------------------------------
     def plan(self, start, goal, env):
         t0 = time.time()
         nodes = [tuple(start)]

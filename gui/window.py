@@ -83,9 +83,7 @@ class MainWindow(QWidget):
 
         self.add_mode = False
 
-    # ----------------------------------------------------------------------
     # BUTTONS
-    # ----------------------------------------------------------------------
 
     def on_start(self):
         choice = self.planner_dropdown.currentText()
@@ -100,8 +98,13 @@ class MainWindow(QWidget):
         self.sim.planner1 = copy.deepcopy(planner)
         self.sim.planner2 = copy.deepcopy(planner)
 
-        self.sim.compute_paths()
+        planner_type = self.planner_dropdown.currentText()
+
+        if planner_type in ["A*", "RRT"]:
+            self.sim.compute_paths()
+
         self.sim.start()
+
         self.status_label.setText(f"Running {choice}")
 
     def on_stop(self):
@@ -130,9 +133,7 @@ class MainWindow(QWidget):
         self.sim.reset()
         self.update_canvas()
 
-    # ----------------------------------------------------------------------
     # GIF
-    # ----------------------------------------------------------------------
 
     def toggle_gif_record(self):
         if not self.recording:
@@ -148,17 +149,13 @@ class MainWindow(QWidget):
             except Exception as e:
                 self.status_label.setText(f"GIF save failed: {e}")
 
-    # ----------------------------------------------------------------------
     # TIMERS
-    # ----------------------------------------------------------------------
 
     def on_sim_step(self):
         if self.sim.running:
             self.sim.step()
 
-    # ----------------------------------------------------------------------
     # DRAW CANVAS
-    # ----------------------------------------------------------------------
 
     def update_canvas(self):
         self.canvas.draw_environment(self.env)
