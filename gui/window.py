@@ -10,7 +10,6 @@ from planners.rrt import RRTPlanner
 import imageio
 import copy
 
-
 class MainWindow(QWidget):
     def __init__(self, env, sim):
         super().__init__()
@@ -98,13 +97,11 @@ class MainWindow(QWidget):
         self.sim.planner1 = copy.deepcopy(planner)
         self.sim.planner2 = copy.deepcopy(planner)
 
-        planner_type = self.planner_dropdown.currentText()
-
-        if planner_type in ["A*", "RRT"]:
+        # Only do path planning for A*/RRT
+        if choice in ["A*", "RRT"]:
             self.sim.compute_paths()
 
         self.sim.start()
-
         self.status_label.setText(f"Running {choice}")
 
     def on_stop(self):
@@ -118,10 +115,10 @@ class MainWindow(QWidget):
         )
 
     def add_horizontal(self):
-        pass
+        self.sim.add_horizontal_obstacle(y=15, speed=1.5)
 
     def add_vertical(self):
-        pass
+        self.sim.add_vertical_obstacle(x=15, speed=1.5)
 
     def on_click(self, event):
         if self.add_mode and event.xdata is not None:
@@ -168,36 +165,27 @@ class MainWindow(QWidget):
         self.canvas.draw_goal(g1, "blue", marker="x")
         self.canvas.draw_goal(g2, "red", marker="o")
 
-        # BOTH UAV PLANNERS
+        # NEW LINE ADDED HERE
+        self.canvas.draw_dynamic_obstacles(dyn)
+
+        # PLANNER VISUALIZATION
         p1 = self.sim.planner1
         p2 = self.sim.planner2
 
         from planners.a_star import AStarPlanner
         from planners.rrt import RRTPlanner
 
-        # UAV1 path (yellow) + tree (cyan)
         if isinstance(p1, AStarPlanner):
             self.canvas.draw_path(p1.path, "yellow")
         elif isinstance(p1, RRTPlanner):
             self.canvas.draw_rrt_tree(p1.tree_edges, "cyan")
             self.canvas.draw_path(p1.path, "yellow")
 
-        # UAV2 path (orange) + tree (magenta)
         if isinstance(p2, AStarPlanner):
             self.canvas.draw_path(p2.path, "orange")
         elif isinstance(p2, RRTPlanner):
             self.canvas.draw_rrt_tree(p2.tree_edges, "magenta")
             self.canvas.draw_path(p2.path, "orange")
-
-        # Metrics (show UAV1)
-        try:
-            if isinstance(p1, AStarPlanner):
-                txt = f"A* | Time {p1.plan_time:.1f}ms | Length {p1.path_length:.2f} | Expanded {p1.expanded_count}"
-            else:
-                txt = f"RRT | Time {p1.plan_time:.1f}ms | Length {p1.path_length:.2f} | Nodes {p1.node_count}"
-            self.status_label.setText(txt)
-        except:
-            pass
 
         self.canvas.refresh()
 

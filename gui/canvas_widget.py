@@ -72,5 +72,13 @@ class CanvasWidget(QWidget):
     def draw_goal(self, goal, color="red", marker="x"):
         self.ax.plot(goal[0], goal[1], marker=marker, markersize=12, color=color)
 
+    # NEW FUNCTION ADDED
+    def draw_dynamic_obstacles(self, dyn_list):
+        for obs in dyn_list:
+            x, y = obs.pos
+            s = obs.size
+            rect = Rectangle((x - s/2, y - s/2), s, s, color="black")
+            self.ax.add_patch(rect)
+
     def refresh(self):
         self.canvas.draw()
