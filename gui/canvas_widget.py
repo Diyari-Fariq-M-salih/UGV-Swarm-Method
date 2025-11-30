@@ -4,7 +4,6 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon, Rectangle
 
-
 class CanvasWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -18,7 +17,6 @@ class CanvasWidget(QWidget):
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    # Draw the environment grid (static + dynamic)
     def draw_environment(self, env):
         self.ax.clear()
 
@@ -29,14 +27,23 @@ class CanvasWidget(QWidget):
             extent=[0, env.width, 0, env.height],
             vmin=0,
             vmax=1,
-            interpolation='nearest'  # VERY IMPORTANT to avoid artifacts
+            interpolation='nearest'
         )
 
         self.ax.set_xlim(0, env.width)
         self.ax.set_ylim(0, env.height)
         self.ax.set_aspect("equal", "box")
 
-    # Draw UAVs (polygon bodies)
+    def draw_path(self, path, color="yellow"):
+        if len(path) > 1:
+            xs = [p[0] for p in path]
+            ys = [p[1] for p in path]
+            self.ax.plot(xs, ys, color=color, linewidth=2)
+
+    def draw_rrt_tree(self, edges, color="cyan"):
+        for a, b in edges:
+            self.ax.plot([a[0], b[0]], [a[1], b[1]], color=color, linewidth=0.6)
+
     def draw_uav(self, state, color="blue", L=0.5):
         x, y, theta, _, _ = state
 
@@ -62,22 +69,8 @@ class CanvasWidget(QWidget):
         poly = Polygon(rotated, closed=True, color=color)
         self.ax.add_patch(poly)
 
-    # Draw goals
     def draw_goal(self, goal, color="red", marker="x"):
         self.ax.plot(goal[0], goal[1], marker=marker, markersize=12, color=color)
-
-    # Draw dynamic obstacles as exact rectangles
-    def draw_dynamic_obstacles(self, dyn_list):
-        for obs in dyn_list:
-            rect = Rectangle(
-                (obs.pos[0] - obs.size / 2,
-                 obs.pos[1] - obs.size / 2),
-                obs.size,
-                obs.size,
-                facecolor="black",
-                edgecolor="black"
-            )
-            self.ax.add_patch(rect)
 
     def refresh(self):
         self.canvas.draw()
