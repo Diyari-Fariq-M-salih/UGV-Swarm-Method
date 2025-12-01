@@ -1,0 +1,254 @@
+@ -0,0 +1,253 @@
+# Multi-UAV Path Planning, Control, and Elastic Band Optimization
+
+_A Technical Report (with Non-Holonomic UAV Dynamics)_
+
+---
+
+## **1. Introduction**
+
+This project implements a full-stack **multi-UAV navigation system** featuring:
+
+- Global planners: **A\*** and **RRT**
+- Local reactive planner: **Potential Fields**
+- Path optimizer: **Elastic Band (E-Band)**
+- Realistic **non-holonomic UAV dynamics**
+- Dynamic obstacles
+- Multi-agent interaction forces
+
+Each subsystem is implemented from scratch in Python.
+
+---
+
+## **2. Environment and Occupancy Grid**
+
+Defined in `environment.py`
+
+- Static obstacles
+- Inflated obstacles (for planning clearance)
+- Dynamic obstacles (for physics/avoidance)
+
+World–grid conversions:
+
+$$
+g_x = \lfloor x / res \rfloor,\quad
+g_y = \lfloor y / res \rfloor.
+$$
+
+Obstacle inflation performed via binary dilation.
+
+---
+
+## **3. UAV Dynamics (Non-Holonomic Bicycle Model)**
+
+Defined exactly in `uav_controller.py`
+
+### **State**
+
+$$
+(x, y, \theta, v, \phi)
+$$
+
+### **Continuous-Time Dynamics**
+
+$$
+\dot{x} = v\cos\theta
+$$
+
+$$
+\dot{y} = v\sin\theta
+$$
+
+$$
+\dot{\theta} = \frac{v}{L}\tan\phi
+$$
+
+$$
+\dot{v} = a,\qquad \dot{\phi} = \omega
+$$
+
+These equations describe a **non-holonomic bicycle model**, not a holonomic point robot.
+
+---
+
+### **Simplified Control Explanation**
+
+1. Potential Field computes a force vector  
+   $$ \mathbf{f} = (f_x, f_y). $$
+
+2. Convert force → desired heading  
+   $$ \theta_d = \arctan2(f_y, f_x). $$
+
+3. Heading error  
+   $$ e\_\theta = \theta_d - \theta. $$
+
+4. Convert heading → steering angle command
+
+   $$
+   \phi_d = \arctan\left(\frac{2L\sin(e_\theta)}{v + \epsilon}\right).
+   $$
+
+5. Force magnitude → desired speed
+6. Apply bicycle kinematics for state update
+
+This produces realistic steering-limited movement.
+
+---
+
+## **4. Simulation Logic**
+
+Located in `simulation.py`
+
+Key logic:
+
+- Dynamic obstacle motion with bouncing
+- Event-based replanning (when a waypoint becomes occupied)
+- Pure pursuit tracking for global planners
+- Potential field forces for reactive planners
+- UAV–UAV repulsion
+- Simulation stops only when _both_ UAVs reach goals
+
+---
+
+## **5. A\* Global Planner**
+
+From `a_star.py`
+
+### **A\* Cost Function**
+
+$$
+f(n)=g(n)+h(n)
+$$
+
+Chebyshev heuristic for 8-connected grids:
+
+$$
+h(n)=\sqrt{2}\min(dx,dy) + |dx-dy|.
+$$
+
+A\* provides an optimal global path, later smoothed by E-Band.
+
+---
+
+## **6. RRT Global Planner**
+
+From `rrt.py`
+
+Components:
+
+- Random free-space sampling
+- Nearest-node search
+- Steering toward sample
+- Collision checking against inflated + dynamic grid
+- Safe path shortcut smoothing
+
+RRT is fast and handles cluttered spaces well.
+
+---
+
+## **7. Potential Fields Local Planner**
+
+From `potential_field.py`
+
+### **Attractive Force**
+
+$$
+F_{att} = k_{att}\frac{p_g - p}{\|p_g - p\|}
+$$
+
+### **Obstacle Repulsion**
+
+$$
+F_{obs} = k_{rep}\left( \frac{1}{d} - \frac{1}{d_0} \right)
+\frac{1}{d^2}\frac{p - p_o}{\|p - p_o\|}
+$$
+
+### **Inter-UAV Repulsion**
+
+$$
+F_{uav} = k\left( \frac{1}{d} - \frac{1}{d_{uav}} \right)
+\frac{1}{d^2}(p_i - p_j)
+$$
+
+The controller blends:
+
+$$
+F = F_{att} + F_{obs} + F_{uav}.
+$$
+
+For global planners, PF acts as a **local safety layer**.
+
+---
+
+## **8. Elastic Band (E-Band) Path Optimization**
+
+From `elasticBand.py`
+
+E-Band turns the global path into a deformable chain of **bubbles**.
+
+### **Contraction Force**
+
+$$
+F_{cont} = k_c \left(
+\frac{b_{i-1}-b_i}{\|b_{i-1}-b_i\|}
++
+\frac{b_{i+1}-b_i}{\|b_{i+1}-b_i\|}
+\right)
+$$
+
+### **Repulsive Weight**
+
+$$
+\rho(b)=k\left(\frac{1}{r(b)} - \frac{1}{d_{safe}}\right)
+$$
+
+### **Gradient-Based Repulsion**
+
+Gradient computed via numerical approximation.
+
+### **Force Projection**
+
+$$
+F^\perp = F - (F\cdot \hat{t})\hat{t}
+$$
+
+### **Bubble Adaptation**
+
+- Insert bubbles where gaps appear
+- Remove redundant bubbles
+- Update radii based on environment clearance
+
+This produces a smooth, obstacle-aware path.
+
+---
+
+## **9. Formation Control Experiments**
+
+From `formation_controller.py`
+
+Explored:
+
+- Bearing-based formation graphs
+- Distance-maintenance proportional control
+- Formation scaling experiments
+
+Due to non-holonomic motion, formations were unstable — useful insights but not used in the final pipeline.
+
+---
+
+## **10. Final System Architecture**
+
+| Layer                  | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| **Global Planning**    | A\*, RRT                                           |
+| **Local Optimization** | Elastic Band deformation                           |
+| **Reactive Control**   | Potential Fields                                   |
+| **Dynamics**           | Bicycle model from `uav_controller.py`             |
+| **Simulation**         | Dynamic obstacles, two-UAV logic, event replanning |
+| **Visualization**      | Matplotlib, fading paths, GUI                      |
+
+---
+
+## The planner stack is:
+
+### A\*/RRT + Potential Field → Elastic Band → Bicycle Controller
