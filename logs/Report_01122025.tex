@@ -1,0 +1,227 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,graphicx,float,hyperref,caption}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{\textbf{Multi-UAV Path Planning, Control, and Elastic Band Optimization}\\
+	{\large System Architecture, Theory, and Development Report}}
+\author{Diyari + Ilyas }
+\date{\today}
+
+\begin{document}
+	\maketitle
+	
+	\begin{abstract}
+		This report presents the development of a full-stack multi-UAV navigation framework.
+		The system integrates global planning (A*, RRT), reactive local planning (Potential Fields), 
+		path smoothing using Elastic Band deformation, dynamic obstacles, and multi-agent interactions.
+		Unlike holonomic simplifications found in literature, our UAVs are simulated using 
+		a \emph{non-holonomic bicycle model} with steering dynamics, matched exactly to our implementation.
+		The report documents all major modules, the theoretical background that supports them, the engineering
+		decisions made during development, and the iterative improvements that led to a stable working system.
+	\end{abstract}
+	
+	\section{Introduction}
+	The objective of this project is to design, implement, and analyze a full multi-UAV navigation pipeline.
+	The system includes:
+	\begin{itemize}
+		\item Global path planners (A* \cite{astar}, RRT \cite{rrt})
+		\item Local reactive potential field controller
+		\item Elastic Band path deformation for smoothing
+		\item A realistic non-holonomic UAV model based on bicycle dynamics
+		\item Multi-agent interaction forces
+		\item Dynamic obstacle avoidance
+	\end{itemize}
+	
+	The entire implementation is custom-built in Python. 
+	This report combines theory with code-based descriptions of our system.
+	
+	\section{Environment and Occupancy Grid}
+	The environment is represented using an occupancy grid defined in \texttt{environment.py} :contentReference[oaicite:0]{index=0}.
+	The grid stores static obstacles, inflated obstacles for planning, and dynamic obstacles separately.
+	
+	Grid conversion:
+	\[
+	g_x = \left\lfloor \frac{x}{res} \right\rfloor,\qquad
+	g_y = \left\lfloor \frac{y}{res} \right\rfloor.
+	\]
+	
+	Inflated obstacles are generated using binary dilation:
+	\[
+	O_{\text{inflated}} = O \oplus B_r.
+	\]
+	
+	Dynamic obstacles are integrated but not drawn in the base map to prevent visual clutter.
+	
+	\section{Non-Holonomic UAV Model}
+	Our UAV is not holonomic. 
+	It uses the bicycle model implemented in \texttt{uav\_controller.py} :contentReference[oaicite:1]{index=1}.
+	
+	\subsection{State Vector}
+	\[
+	s = (x, y, \theta, v, \phi)
+	\]
+	
+	\subsection{Continuous-Time Kinematics}
+	\[
+	\dot{x} = v\cos\theta,\qquad
+	\dot{y} = v\sin\theta,
+	\]
+	\[
+	\dot{\theta} = \frac{v}{L}\tan\phi,
+	\]
+	\[
+	\dot{v} = a,\qquad \dot{\phi} = \omega.
+	\]
+	
+	This model captures steering constraints and non-holonomic motion, unlike simple point-mass approximations.
+	
+	\subsection{Control Logic (Simplified Explanation)}
+	The potential field computes a desired force vector:
+	\[
+	\mathbf{f} = (f_x, f_y).
+	\]
+	
+	Controller steps:
+	\begin{enumerate}
+		\item Compute desired heading:
+		\[
+		\theta_d = \arctan2(f_y, f_x)
+		\]
+		\item Heading error:
+		\[
+		e_\theta = \theta_d - \theta
+		\]
+		\item Convert to steering angle command:
+		\[
+		\phi_d = \arctan\left(\frac{2L\sin(e_\theta)}{v + \epsilon}\right)
+		\]
+		\item Compute acceleration based on force magnitude.
+	\end{enumerate}
+	
+	This yields realistic non-holonomic behavior.
+	
+	\section{Simulation Logic}
+	The main simulation loop is implemented in \texttt{simulation.py} :contentReference[oaicite:2]{index=2}.
+	
+	Key logic includes:
+	\begin{itemize}
+		\item Dynamic obstacle updates
+		\item Event-based replanning (if waypoint becomes occupied)
+		\item Pure pursuit for global planners
+		\item Potential-field-based control for reactive planners
+		\item UAV--UAV repulsion forces
+	\end{itemize}
+	
+	Two UAVs operate simultaneously with independent goals.
+	
+	\section{A* Global Planner}
+	Implemented in \texttt{a\_star.py} :contentReference[oaicite:3]{index=3}.
+	
+	A* minimizes
+	\[
+	f(n)=g(n)+h(n)
+	\]
+	using Chebyshev heuristic for 8-connected grids:
+	\[
+	h(n)=\sqrt{2}\min(dx,dy) + |dx-dy|.
+	\]
+	
+	Path reconstruction is performed using parent pointers and converted back to world coordinates.
+	
+	\section{RRT Planner}
+	Implemented in \texttt{rrt.py} :contentReference[oaicite:4]{index=4}.
+	
+	Key components:
+	\begin{itemize}
+		\item Random sampling
+		\item Nearest-node search
+		\item Steering toward sample:
+		\[
+		x_{new}=x_{near}+\frac{v}{\|v\|}\cdot step
+		\]
+		\item Collision checking
+		\item Path smoothing with collision-safe shortcutting
+	\end{itemize}
+	
+	The planner includes a limit on maximum iterations for safety.
+	
+	\section{Potential Field Local Planner}
+	Defined in \texttt{potential\_field.py} :contentReference[oaicite:5]{index=5}.
+	
+	\subsection{Attractive Potential}
+	\[
+	\mathbf{F}_{att} = k_{att}\frac{p_{goal}-p}{\|p_{goal}-p\|}
+	\]
+	
+	\subsection{Obstacle Repulsion}
+	For an obstacle within influence radius $d_0$:
+	\[
+	\mathbf{F}_{obs} = k_{rep}
+	\left(\frac{1}{d}-\frac{1}{d_0}\right)\frac{1}{d^2}\frac{p - p_o}{\|p - p_o\|}.
+	\]
+	
+	\subsection{Inter-UAV Repulsion}
+	\[
+	\mathbf{F}_{uav} = k_{rep,uav}
+	\left(\frac{1}{d}-\frac{1}{d_{uav}}\right)\frac{1}{d^2}(p_i - p_j).
+	\]
+	
+	\section{Elastic Band Path Optimization}
+	Implemented in \texttt{elasticBand.py} :contentReference[oaicite:6]{index=6}.
+	
+	The path is represented as a series of bubbles with radii based on clearance.
+	
+	\subsection{Contraction Force}
+	\[
+	\mathbf{F}_{cont} = k_c 
+	\left(
+	\frac{b_{i-1}-b_i}{\|b_{i-1}-b_i\|} +
+	\frac{b_{i+1}-b_i}{\|b_{i+1}-b_i\|}
+	\right)
+	\]
+	
+	\subsection{Repulsive Force}
+	Based on potential field weight:
+	\[
+	\rho(b)=k\left(\frac{1}{r(b)}-\frac{1}{d_{safe}}\right)
+	\]
+	
+	A numerical gradient is used to compute repulsion direction.
+	
+	\subsection{Bubble Insertion \& Removal}
+	If two bubbles do not overlap, a new bubble is inserted.  
+	If two neighbors overlap even without $b_i$, the bubble is removed.
+	
+	\section{Formation Control Experiments}
+	The preliminary formation experiments in \texttt{formation\_controller.py} :contentReference[oaicite:7]{index=7}
+	were based on:
+	\begin{itemize}
+		\item Bearing-based formation graphs
+		\item Scaling of formations
+		\item Distance-maintenance proportional control
+	\end{itemize}
+	
+	Although non-holonomic constraints caused instability, the experiments provided valuable insights.
+	
+	\section{Conclusion}
+	This project successfully integrates multiple planning and control techniques into a coherent multi-UAV navigation framework.
+	The system demonstrates:
+	\begin{itemize}
+		\item Full non-holonomic control
+		\item Global \& local planning integration
+		\item Elastic Band smoothing
+		\item Dynamic obstacle handling
+		\item Multi-agent interaction
+	\end{itemize}
+	
+	It provides a strong foundation for future extensions such as cooperative planning or MPC-based control.
+	
+	\bibliographystyle{plain}
+	\begin{thebibliography}{9}
+		\bibitem{astar} Hart, P.E., Nilsson, N.J., Raphael, B. (1968). A Formal Basis for the Heuristic Determination of Minimum Cost Paths.
+		\bibitem{rrt} LaValle, S.M. (1998). Rapidly-exploring random trees: A new tool for path planning.
+	\end{thebibliography}
+	
+\end{document}
