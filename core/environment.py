@@ -7,7 +7,7 @@ class OccupancyGrid:
     Dynamic obstacles are drawn separately and do NOT appear
     in the imshow grid to avoid visual artifacts.
     """
-    def __init__(self, width, height, resolution=1.0):
+    def __init__(self, width, height, resolution=20.0):
         self.width = int(width)
         self.height = int(height)
         self.resolution = float(resolution)

@@ -162,7 +162,7 @@ class MainWindow(QWidget):
         self.canvas.draw_uav(u1, "blue", L=self.sim.controller.L)
         self.canvas.draw_uav(u2, "red", L=self.sim.controller.L)
 
-        self.canvas.draw_goal(g1, "blue", marker="x")
+        self.canvas.draw_goal(g1, "blue", marker="o")
         self.canvas.draw_goal(g2, "red", marker="o")
 
         # NEW LINE ADDED HERE
@@ -176,16 +176,16 @@ class MainWindow(QWidget):
         from planners.rrt import RRTPlanner
 
         if isinstance(p1, AStarPlanner):
-            self.canvas.draw_path(p1.path, "yellow")
+            self.canvas.draw_fading_path(p1.path, u1, "yellow")
         elif isinstance(p1, RRTPlanner):
-            self.canvas.draw_rrt_tree(p1.tree_edges, "cyan")
-            self.canvas.draw_path(p1.path, "yellow")
+            #self.canvas.draw_rrt_tree(p1.tree_edges, "cyan")
+            self.canvas.draw_fading_path(p1.path, u1, "yellow")
 
         if isinstance(p2, AStarPlanner):
-            self.canvas.draw_path(p2.path, "orange")
+            self.canvas.draw_fading_path(p2.path, u2 ,"orange")
         elif isinstance(p2, RRTPlanner):
-            self.canvas.draw_rrt_tree(p2.tree_edges, "magenta")
-            self.canvas.draw_path(p2.path, "orange")
+            #self.canvas.draw_rrt_tree(p2.tree_edges, "magenta")
+            self.canvas.draw_fading_path(p2.path, u2 ,"orange")
 
         self.canvas.refresh()
 

@@ -19,6 +19,9 @@ class CanvasWidget(QWidget):
 
     def draw_environment(self, env):
         self.ax.clear()
+        self.ax.minorticks_on()
+        self.ax.grid(which="major", linestyle="-", alpha=0.6)
+        self.ax.grid(which="minor", linestyle=":", alpha=0.3)
 
         self.ax.imshow(
             env.get_final_grid(),
@@ -71,6 +74,28 @@ class CanvasWidget(QWidget):
 
     def draw_goal(self, goal, color="red", marker="x"):
         self.ax.plot(goal[0], goal[1], marker=marker, markersize=12, color=color)
+
+    def draw_fading_path(self, path, uav_pos, color="yellow", max_dist=5.0):
+        if path is None or len(path) < 2:
+            return
+
+        px, py = uav_pos[0], uav_pos[1]
+
+        for i in range(len(path)-1):
+            x1, y1 = path[i]
+            x2, y2 = path[i+1]
+
+            # Distance of segment midpoint to UAV
+            mx = (x1 + x2) * 0.5
+            my = (y1 + y2) * 0.5
+            dist = np.sqrt((mx - px)**2 + (my - py)**2)
+
+            # Compute transparency
+            alpha = max(0.0, 1.0 - dist / max_dist)
+
+            self.ax.plot([x1, x2], [y1, y2],
+                        color=color, alpha=alpha, linewidth=2)
+
 
     # NEW FUNCTION ADDED
     def draw_dynamic_obstacles(self, dyn_list):
