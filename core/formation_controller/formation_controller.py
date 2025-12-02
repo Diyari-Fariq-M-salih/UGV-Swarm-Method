@@ -157,9 +157,12 @@ class Leader():
         """Compute scale factor based on iteration number."""
         # index = (iteration_num // 2) % len(self.radii)
         # scale_factor = self.radii[index] / self.formation_base_radius
-        # linearly decrease scale factor from 1.0 to 0.4 over 40 iterations
-        max_iterations = 40
-        scale_factor = 1.0 - 0.6 * (iteration_num / max_iterations)
+        # linearly decrease scale factor from 1.0 to 0.5 over 100 iterations 
+        # then constant at 0.5 for the rest of the simulation
+        max_iterations = 100
+        scale_factor = 1.0 - 0.5 * (iteration_num / max_iterations)
+        if iteration_num > max_iterations:
+            scale_factor = 0.5
         return scale_factor
 
     # def scale_formation(self, formation:Formation):
