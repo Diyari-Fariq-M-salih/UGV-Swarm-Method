@@ -25,7 +25,7 @@ class elasticBand:
         self.alpha = eband_params.get('alpha', 0.1)  # step size for updates
         self.d_inflation = eband_params.get('inflation_dist', 0.5)  # safety distance (influence radius)
         rho0_tol = eband_params.get('rho0_tol', 0.2)
-        
+        self.base_clearance = eband_params.get('base_clearance', 10.0)  # maximum clearance value
         # Get robot_params with defaults
         robot_params = params.get('robot_params', {})
         self.robot_radius = robot_params.get('radius', 0.3)  # robot radius
@@ -129,8 +129,8 @@ class elasticBand:
             else:
                 i += 1
         
-        if n_removed > 0 or n_inserted > 0:
-            print(f"Removed {n_removed} redundant bubbles. Inserted {n_inserted} new bubbles.")
+        # if n_removed > 0 or n_inserted > 0:
+            # print(f"Removed {n_removed} redundant bubbles. Inserted {n_inserted} new bubbles.")
 
     # helper functions
 
@@ -169,7 +169,7 @@ class elasticBand:
         clearance = self.compute_clearance(bubble)
         # Ensure clearance is finite and at least robot_radius
         if not np.isfinite(clearance):
-            clearance = 10.0  # Large but finite value for free space
+            clearance = self.base_clearance  # Large but finite value for free space
         bubble.radius = max(clearance, self.robot_radius)  # ensure minimum radius
 
     def compute_clearance(self, bubble: Bubble):
