@@ -96,48 +96,64 @@ algorithms.
 
 # 🛠️ Setup & Usage Guide
 
-## 1. Install Anaconda
+## ⚙️ Installation & Environment Setup
 
-Download: https://www.anaconda.com/products/distribution
+This project does **not** require Anaconda specifically.  
+You may use **any Python virtual environment**, such as:
 
-## 2. Create or activate the environment
+- `venv` (recommended)
+- `virtualenv`
+- Conda / Mamba (optional)
+- Poetry (optional)
 
-```bash
-conda activate pf_gui
-```
+### 1. Create a virtual environment
 
-To recreate it:
-
-```bash
-conda create -n pf_gui python=3.10
-conda activate pf_gui
-```
-
-## 3. Install dependencies
+Using `venv`:
 
 ```bash
-pip install matplotlib numpy pillow defusedxml networkx PySide6 scipy
+python -m venv uav_env
 ```
 
-## 4. Run the simulator (GUI)
+Activate it:
+
+- **Windows**
+  ```bash
+  uav_env\Scripts\activate
+  ```
+- **Linux / macOS**
+  ```bash
+  source uav_env/bin/activate
+  ```
+
+### 2. Install dependencies
+
+```bash
+pip install numpy matplotlib PySide6 scipy
+```
+
+(Optional for GIF export):
+
+```bash
+pip install imageio
+```
+
+---
+
+## ▶️ Running the Simulation
 
 ```bash
 python main.py
 ```
 
-## 5. Run the Elastic Band (EBand) Planner Test
+Use the GUI to:
 
-```bash
-cd planners
-python test_eband.py
-```
+- Select the planner (PF, A\*, RRT, A\*+EBand, RRT+EBand)
+- Draw static obstacles
+- Add dynamic obstacles
+- Start, stop, and reset the simulation
+- Record animations
 
-## 6. Run the Formation Controller Test
-
-```bash
-cd core/formation_controller
-python formtion_test.py
-```
+---
 
 ## 🙌 Acknowledgments
 
