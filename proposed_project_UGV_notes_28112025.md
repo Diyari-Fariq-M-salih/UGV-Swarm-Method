@@ -3,6 +3,10 @@
 _A modular simulation framework for A\*, RRT, Potential Fields, and
 Elastic Band._
 
+## 👥 Authors
+
+- **Mohammed-salih Diyari\*** - **Chaabeni Ilyes\***
+
 ## 🌟 Overview
 
 This project provides a clean and intuitive simulation environment for
