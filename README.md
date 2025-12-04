@@ -147,7 +147,7 @@ python main.py
 
 Use the GUI to:
 
-- Select the planner (PF, A\*, RRT, A\*+EBand, RRT+EBand)
+- Select the planner (PF, A\*, RRT)
 - Draw static obstacles
 - Add dynamic obstacles
 - Start, stop, and reset the simulation

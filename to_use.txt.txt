@@ -1,5 +1,0 @@
-OPEN any env with the requirements
-
-run main.py
-
-create your desired environment and planner, then start
